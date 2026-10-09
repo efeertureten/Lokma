@@ -1,0 +1,1979 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Lokma Kalori</title>
+<meta name="description" content="Fotoğraftan kalori ve makro takibi. Kayıtlar yalnızca senin cihazında.">
+<meta name="theme-color" content="#121110">
+<meta name="color-scheme" content="dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lokma">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://generativelanguage.googleapis.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Onest:wght@400..700&display=swap">
+<style>
+/* Layout: one thumb-first column. The ring sits off-centre up top, every action lives in the lower third, details rise as sheets from the bottom. */
+:root{
+  --bg:#121110; --surface:#1B1A17; --raised:#262420; --line:#33302B;
+  --fg:#F4EFE7; --muted:#A79F94; --faint:#756E65;
+  --kcal:#FF7A3D; --kcal-hot:#FF4A33; --on-kcal:#1D0E06;
+  --pro:#8FB3FF; --carb:#E8C36A; --fat:#F38BA2; --fib:#76D4B3; --sug:#C6A8F4;
+  --ok:#76D4B3; --warn:#E8C36A; --bad:#FF6A5C;
+  --f-display:"Bricolage Grotesque", ui-rounded, "SF Pro Rounded", system-ui, sans-serif;
+  --f-body:"Onest", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif;
+  --spring:cubic-bezier(.32,1.28,.48,1);
+  --ease:cubic-bezier(.22,1,.36,1);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{background:var(--bg);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45;padding-inline:16px;padding-block:0;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+body.has-sheet{overflow:hidden}
+button,input,textarea{font:inherit;color:inherit}
+button{background:none;border:0;padding:0;cursor:pointer;touch-action:manipulation}
+label{touch-action:manipulation}
+h1,h2,h3{margin:0;font-family:var(--f-display);font-weight:650;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0}
+ul,ol{margin:0}
+.num{font-variant-numeric:tabular-nums}
+.ic{width:20px;height:20px;flex:none}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;opacity:0}
+:focus-visible{outline:2px solid var(--kcal);outline-offset:2px;border-radius:10px}
+.muted{color:var(--muted)}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.eyebrow.hot{color:var(--kcal-hot)}
+
+main{max-width:560px;margin:0 auto;padding-top:8px;padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
+body.tab-today main{padding-bottom:calc(196px + env(safe-area-inset-bottom,0px))}
+.view{display:flex;flex-direction:column;gap:24px;animation:viewIn .4s var(--ease)}
+@keyframes viewIn{from{opacity:.35;transform:translateY(6px)}}
+
+.offline{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;background:rgba(232,195,106,.1);color:var(--warn);font-size:13px;margin:8px 0 4px}
+
+/* Today */
+.day-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding-top:10px}
+.day-head h1{font-size:32px;line-height:1.05;margin-top:6px}
+.day-nav{display:flex;gap:6px;align-items:center}
+.icon-btn{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:var(--surface);color:var(--fg);transition:transform .3s var(--spring),background .2s;flex:none}
+.icon-btn:active{transform:scale(.9)}
+.icon-btn[disabled]{opacity:.3;pointer-events:none}
+.icon-btn.ghost{background:transparent;color:var(--muted)}
+.chip{position:relative;min-height:36px;padding:0 14px;border-radius:999px;background:var(--raised);font-size:13px;font-weight:600}
+.chip::after{content:"";position:absolute;inset:-4px}
+
+.hero{display:grid;grid-template-columns:minmax(0,172px) minmax(0,1fr);gap:22px;align-items:center}
+.ring-wrap{position:relative;aspect-ratio:1/1;width:100%;max-width:172px}
+.ring{width:100%;height:100%;display:block}
+.ring-track{fill:none;stroke:var(--raised);stroke-width:13}
+.ring-val{fill:none;stroke:url(#ringGrad);stroke-width:13;stroke-linecap:round;transition:stroke-dashoffset 1.1s var(--ease)}
+.ring-val.over{stroke:var(--kcal-hot)}
+.ring-val.zero{opacity:0}
+.ring-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.ring-c b{font-family:var(--f-display);font-size:36px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.ring-c span{font-size:12px;color:var(--muted);margin-top:5px}
+.hero-side{display:flex;flex-direction:column;gap:6px;min-width:0}
+.big{font-family:var(--f-display);font-size:46px;font-weight:700;line-height:1;letter-spacing:-.03em}
+.big small{font-family:var(--f-body);font-size:14px;font-weight:500;color:var(--muted);margin-left:6px;letter-spacing:0}
+.hot{color:var(--kcal-hot)}
+.sub{color:var(--muted);font-size:13px}
+
+.macros{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px 14px}
+.macros.minor{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:-8px}
+.mac{display:flex;flex-direction:column;gap:6px;min-width:0}
+.mac-l{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.mac-l::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--c);flex:none}
+.mac-l em{font-style:normal;color:var(--faint)}
+.mac-v{font-size:12.5px;color:var(--faint);white-space:nowrap}
+.mac-v b{font-family:var(--f-display);font-size:23px;font-weight:650;color:var(--fg);letter-spacing:-.01em}
+.mac.mini .mac-v b{font-size:17px}
+.mac.warn .mac-v b{color:var(--bad)}
+.bar{height:6px;border-radius:6px;background:var(--raised);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:6px;background:var(--c);transform-origin:left center}
+.anim .bar i{animation:fillX 1s var(--ease) both}
+@keyframes fillX{from{transform:scaleX(0)}}
+
+.sec-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.sec-head h2{font-size:20px}
+.link{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 2px;color:var(--kcal);font-weight:600;font-size:14px}
+.link .ic{width:17px;height:17px}
+.meal-list{display:flex;flex-direction:column;gap:8px}
+.meal{display:grid;grid-template-columns:54px minmax(0,1fr) auto;align-items:center;gap:13px;width:100%;padding:10px 16px 10px 10px;border-radius:22px;background:var(--surface);text-align:left;min-height:74px;transition:transform .3s var(--spring)}
+.meal:active{transform:scale(.985)}
+.thumb{position:relative;width:54px;height:54px;border-radius:16px;background:var(--raised);display:grid;place-items:center;overflow:hidden;color:var(--muted);flex:none}
+.thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .35s}
+.thumb img.ld{opacity:1}
+.meal-main{display:flex;flex-direction:column;gap:3px;min-width:0}
+.meal-n{font-weight:600;display:flex;gap:8px;align-items:baseline}
+.meal-time{font-size:12px;color:var(--faint);font-weight:500}
+.meal-items{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meal-mac{display:flex;gap:10px;font-size:12px;color:var(--faint)}
+.meal-mac i{font-style:normal;color:var(--c);font-weight:600;margin-right:2px}
+.meal-k{text-align:right;display:flex;flex-direction:column;align-items:flex-end}
+.meal-k b{font-family:var(--f-display);font-size:23px;font-weight:650;line-height:1.05}
+.meal-k span{font-size:11px;color:var(--faint)}
+.meal.empty{background:transparent;border:1px dashed var(--line);min-height:62px;grid-template-columns:42px minmax(0,1fr) auto;padding:9px 16px 9px 9px;cursor:pointer}
+.meal.empty .thumb{width:42px;height:42px;border-radius:13px;background:var(--surface)}
+.meal.empty .meal-n{color:var(--muted);font-weight:500}
+.meal-plus{display:inline-flex;gap:6px;align-items:center;font-size:13px;font-weight:600;color:var(--kcal)}
+.meal-plus .ic{width:17px;height:17px}
+.hint-line{font-size:13.5px;color:var(--muted);margin-top:14px}
+.hint-line b{color:var(--fg);font-weight:600}
+.fine{font-size:12.5px;color:var(--muted)}
+.fine.dim{color:var(--faint)}
+
+/* Bottom: camera dock + tabs */
+.bottom{position:fixed;left:0;right:0;bottom:0;z-index:30;padding:26px 16px calc(10px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top,var(--bg) 66%,rgba(18,17,16,0));pointer-events:none}
+.bottom-in{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+.bottom-in>*{pointer-events:auto}
+.dock{display:flex;gap:10px}
+.cam{flex:1;min-height:62px;border-radius:21px;display:flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(120deg,#FF9445 0%,#FF5A36 62%,#FF4433 100%);color:var(--on-kcal);font-weight:650;font-size:17px;box-shadow:0 16px 34px -16px rgba(255,90,54,.75);cursor:pointer;transition:transform .35s var(--spring)}
+.cam .ic{width:25px;height:25px}
+.gal{width:66px;min-height:62px;border-radius:21px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:var(--raised);border:1px solid var(--line);cursor:pointer;font-size:10.5px;font-weight:600;color:var(--muted);transition:transform .35s var(--spring)}
+.cam:active,.gal:active{transform:scale(.95)}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:5px;border-radius:22px;background:var(--surface);border:1px solid var(--line)}
+.tab{min-height:50px;border-radius:17px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;font-weight:600;color:var(--faint);transition:color .2s,background .25s}
+.tab[aria-current="page"]{background:var(--raised);color:var(--fg)}
+
+/* Buttons & form */
+.btn{min-height:50px;border-radius:16px;padding:0 18px;font-weight:600;font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:transform .3s var(--spring),opacity .2s;cursor:pointer;text-align:center}
+.btn:active{transform:scale(.97)}
+.btn .ic{width:18px;height:18px}
+.btn.primary{background:linear-gradient(120deg,#FF9445,#FF4A33);color:var(--on-kcal)}
+.btn.ghost{background:var(--raised);color:var(--fg)}
+.btn.danger{background:rgba(255,106,92,.1);color:var(--bad)}
+.btn.danger-solid{background:var(--bad);color:#1C0705}
+.btn.block{width:100%}
+.btn.sq{width:54px;padding:0;flex:none}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.input{width:100%;min-height:48px;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:0 14px;font-size:16px;color:var(--fg);transition:border-color .2s;-webkit-appearance:none;appearance:none}
+textarea.input{padding:12px 14px;min-height:90px;resize:vertical;line-height:1.45}
+.input:focus{outline:none;border-color:var(--kcal)}
+.input::placeholder{color:var(--faint)}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label,.flabel{font-size:12.5px;color:var(--muted);font-weight:500}
+.fgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.fgrid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.unit{position:relative}
+.unit .input{padding-right:46px}
+.unit span{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--faint);font-size:13px;pointer-events:none}
+.form-err{color:var(--bad);font-size:13px}
+.form-err:empty{display:none}
+.or{display:flex;align-items:center;gap:12px;color:var(--faint);font-size:12.5px}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);background:var(--bg);border-radius:15px;padding:4px;gap:4px}
+.seg button{min-height:44px;border-radius:11px;font-size:13px;font-weight:500;color:var(--muted);padding:0 4px;transition:background .25s,color .2s;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--raised);color:var(--fg);font-weight:600}
+input[type=range]{-webkit-appearance:none;appearance:none;flex:1;min-width:0;height:44px;background:transparent;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:linear-gradient(to right,var(--kcal) var(--p,50%),var(--raised) var(--p,50%))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;background:var(--fg);margin-top:-11px;box-shadow:0 2px 10px rgba(0,0,0,.45)}
+input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:var(--raised)}
+input[type=range]::-moz-range-progress{height:6px;border-radius:3px;background:var(--kcal)}
+input[type=range]::-moz-range-thumb{width:28px;height:28px;border:0;border-radius:50%;background:var(--fg)}
+
+/* Sheets */
+.sheet-wrap{position:fixed;inset:0;z-index:50}
+.sheet-backdrop{position:absolute;inset:0;background:rgba(6,5,4,.62);opacity:0;transition:opacity .3s var(--ease)}
+.sheet{position:absolute;left:0;right:0;bottom:0;margin-inline:auto;max-width:560px;max-height:calc(100% - 26px - env(safe-area-inset-top,0px));overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;background:var(--surface);border-radius:28px 28px 0 0;padding-inline:16px;transform:translateY(105%);transition:transform .55s var(--spring);box-shadow:0 -24px 60px -24px rgba(0,0,0,.7),0 220px 0 0 var(--surface)}
+.sheet:focus{outline:none}
+.sheet-wrap.open .sheet{transform:translateY(0)}
+.sheet-wrap.open .sheet-backdrop{opacity:1}
+.sheet-head{position:sticky;top:0;z-index:3;background:var(--surface);padding:8px 0 10px}
+.grab{display:block;width:40px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 10px}
+.sh-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.sh-t{min-width:0}
+.sh-t h2{font-size:23px}
+.sh-t p{font-size:13px;color:var(--muted);margin-top:2px}
+.sheet-body{display:flex;flex-direction:column;gap:14px;padding-bottom:calc(26px + env(safe-area-inset-bottom,0px))}
+.sheet-body.has-foot{padding-bottom:0}
+.sheet-foot{position:sticky;bottom:0;z-index:3;display:flex;flex-direction:column;gap:10px;padding-top:18px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(to bottom,rgba(27,26,23,0),var(--surface) 20px)}
+
+/* Result */
+.res-photo{position:relative;border-radius:20px;overflow:hidden;aspect-ratio:4/3;max-height:250px;width:100%;background:var(--raised);transition:max-height .5s var(--ease)}
+.res-photo.small{max-height:150px}
+.res-photo img{width:100%;height:100%;object-fit:cover;display:block;transition:filter .5s}
+.scan{position:absolute;inset:0;display:none;background:linear-gradient(to bottom,rgba(255,122,61,0) 38%,rgba(255,122,61,.5) 50%,rgba(255,122,61,0) 62%);background-size:100% 260%;animation:scan 1.9s var(--ease) infinite alternate}
+.scanning .scan{display:block}
+.scanning img{filter:saturate(.55) brightness(.75)}
+@keyframes scan{from{background-position:0 100%}to{background-position:0 0}}
+.res-quote{margin:0;padding:12px 14px;border-radius:16px;background:var(--bg);color:var(--muted);font-size:14px}
+.res-status{display:flex;align-items:center;gap:12px;font-weight:500;min-height:44px}
+.dots{display:inline-flex;gap:5px}
+.dots i{width:7px;height:7px;border-radius:50%;background:var(--kcal);animation:dot 1.1s ease-in-out infinite}
+.dots i:nth-child(2){animation-delay:.15s}
+.dots i:nth-child(3){animation-delay:.3s}
+@keyframes dot{0%,80%,100%{transform:scale(.5);opacity:.4}40%{transform:scale(1);opacity:1}}
+.res-head h3{font-size:19px}
+.res-head p{font-size:13px;color:var(--muted);margin-top:2px}
+.res-items{list-style:none;padding:0;display:flex;flex-direction:column;gap:10px}
+.res-item{background:var(--bg);border-radius:18px;padding:8px 6px 10px 14px;display:flex;flex-direction:column;gap:2px;animation:itemIn .5s var(--spring) both}
+.res-item:nth-child(2){animation-delay:.05s}.res-item:nth-child(3){animation-delay:.1s}.res-item:nth-child(4){animation-delay:.15s}
+@keyframes itemIn{from{opacity:.2;transform:translateY(10px) scale(.98)}}
+.ri-top{display:flex;align-items:center;gap:6px}
+.ri-name{flex:1;min-width:0;background:transparent;border:0;border-bottom:1px dashed var(--line);font-size:16px;font-weight:600;padding:8px 0;color:var(--fg);border-radius:0}
+.ri-name:focus{outline:none;border-bottom-color:var(--kcal)}
+.conf{font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.conf.hi{color:var(--ok);background:rgba(118,212,179,.12)}
+.conf.mid{color:var(--warn);background:rgba(232,195,106,.12)}
+.conf.lo{color:var(--bad);background:rgba(255,106,92,.12)}
+.ed{display:flex;flex-direction:column;gap:2px;padding-right:8px}
+.ed-g{display:flex;align-items:center;gap:12px}
+.gbox{display:flex;align-items:center;gap:5px;flex:none}
+.gbox .input{width:78px;text-align:right;min-height:44px;padding:0 10px}
+.gbox span{color:var(--muted);font-size:13px}
+.ed-vals{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px;color:var(--muted)}
+.ed-vals b{color:var(--fg);font-weight:650}
+.ed-vals span{display:inline-flex;align-items:center;gap:5px}
+.ed-vals i{width:6px;height:6px;border-radius:50%}
+.tot{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.tot .tk{color:var(--muted);font-size:13px}
+.tot .tk b{font-family:var(--f-display);font-size:30px;font-weight:700;color:var(--fg);letter-spacing:-.02em}
+.tot .tm{font-size:13px;color:var(--muted)}
+.res-error{background:rgba(255,106,92,.08);border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.res-error .t{font-weight:650}
+.res-error p:not(.t){color:var(--muted);font-size:14px}
+.note{font-size:13px;color:var(--muted);background:var(--bg);border-radius:14px;padding:10px 12px}
+.note b{color:var(--fg);margin-right:6px;font-weight:600}
+details.hint summary{min-height:44px;display:flex;align-items:center;color:var(--muted);font-size:14px;cursor:pointer;list-style:none}
+details.hint summary::-webkit-details-marker{display:none}
+details.hint summary::after{content:"+";margin-left:auto;font-size:18px;color:var(--faint)}
+details.hint[open] summary::after{content:"–"}
+details.hint[open]{display:flex;flex-direction:column;gap:10px}
+
+/* Meal detail */
+.m-sum{display:grid;grid-template-columns:auto minmax(0,1fr);gap:20px;align-items:center;padding:2px 0 4px}
+.m-kcal b{font-family:var(--f-display);font-size:44px;font-weight:700;line-height:1;display:block;letter-spacing:-.03em}
+.m-kcal span{font-size:13px;color:var(--muted)}
+.m-macs{display:grid;grid-template-columns:minmax(0,1fr);gap:4px}
+.m-mac{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);min-width:0;white-space:nowrap}
+.m-mac b{margin-left:auto;color:var(--fg);font-weight:600}
+.dot{width:7px;height:7px;border-radius:50%;flex:none}
+.entry{background:var(--bg);border-radius:22px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.thumb.entry-photo{width:100%;height:auto;aspect-ratio:16/10;border-radius:16px}
+.entry-meta{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--muted);padding:0 4px}
+.entry-meta b{color:var(--fg);font-size:15px}
+.eitems{list-style:none;padding:0;display:flex;flex-direction:column}
+.eitem{border-top:1px solid var(--line)}
+.eitem:first-child{border-top:0}
+.eitem-row{display:grid;grid-template-columns:minmax(0,1fr) auto 50px;gap:10px;align-items:center;width:100%;min-height:50px;text-align:left;padding:0 4px}
+.eitem-row .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eitem-row .g{color:var(--muted);font-size:13px}
+.eitem-row .k{text-align:right;font-weight:650}
+.eitem.open .eitem-row .nm{color:var(--kcal)}
+.eitem-ed{display:flex;flex-direction:column;gap:8px;padding:2px 4px 12px}
+.eitem-none{color:var(--faint);font-size:13px;padding:8px 4px}
+.entry-type{display:flex;flex-direction:column;gap:6px}
+.entry-type>span{font-size:12px;color:var(--faint);padding-left:4px}
+.entry-type .seg{background:var(--surface)}
+.entry-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.m-add{display:flex;gap:10px}
+.m-add .btn.primary{flex:1}
+
+/* History */
+.page-head{padding-top:10px}
+.page-head h1{font-size:32px;margin-top:6px}
+.h-sum{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+.h-sum-r{text-align:right;font-size:13px;color:var(--muted)}
+.h-sel{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;font-size:13px;color:var(--muted);min-height:22px;margin-bottom:-12px}
+.h-sel b{color:var(--fg);font-size:15px}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart .goal{stroke:var(--fg);stroke-opacity:.45;stroke-dasharray:4 4}
+.chart .ax{fill:var(--faint);font:500 10px var(--f-body)}
+.chart .ax.on{fill:var(--fg);font-weight:700}
+.chart .goal-t{fill:var(--muted);paint-order:stroke;stroke:var(--bg);stroke-width:3px}
+.chart .b{fill:var(--kcal);opacity:.6;transform-box:fill-box;transform-origin:50% 100%;transition:opacity .25s}
+.chart .over .b{fill:var(--kcal-hot)}
+.chart .sel .b{opacity:1}
+.chart .b0{fill:var(--line)}
+.chart g[data-act]{cursor:pointer}
+.chart.anim .b{animation:grow .7s var(--ease) both}
+@keyframes grow{from{transform:scaleY(0)}}
+.dist{display:flex;height:14px;border-radius:8px;overflow:hidden;gap:3px}
+.dist i{display:block;min-width:4px}
+.dist-leg{list-style:none;margin-top:12px;padding:0;display:flex;flex-direction:column;gap:8px}
+.dist-leg li{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:10px;align-items:center;font-size:14px}
+.dist-leg .g{min-width:84px;text-align:right;color:var(--muted)}
+.dist-minor{margin-top:10px;font-size:13px;color:var(--muted)}
+.day-list{list-style:none;padding:0;display:flex;flex-direction:column}
+.day-row{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) 62px;gap:12px;align-items:center;width:100%;min-height:50px;text-align:left;border-top:1px solid var(--line)}
+.day-list li:first-child .day-row{border-top:0}
+.db{height:6px;border-radius:6px;background:var(--raised);overflow:hidden}
+.db i{display:block;height:100%;background:var(--kcal);border-radius:6px}
+.db i.over{background:var(--kcal-hot)}
+.day-row b{text-align:right;font-weight:600}
+
+/* Settings */
+.group{background:var(--surface);border-radius:24px;padding:18px 16px;display:flex;flex-direction:column;gap:14px}
+.group h2{font-size:19px}
+.seg-row{display:flex;flex-direction:column;gap:6px}
+.seg-row>span{font-size:12.5px;color:var(--muted);font-weight:500}
+.rec{border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:8px}
+.rec-top{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.rec-top b{font-family:var(--f-display);font-size:36px;font-weight:700;line-height:1;letter-spacing:-.02em}
+.steps{padding-left:20px;display:flex;flex-direction:column;gap:6px;color:var(--muted);font-size:14px}
+.steps b{color:var(--fg);font-weight:600}
+.bk-out{display:flex;flex-direction:column;gap:10px}
+.progress{height:6px;border-radius:6px;background:var(--raised);overflow:hidden}
+.progress i{display:block;height:100%;background:var(--kcal);transition:width .3s}
+
+/* Toast */
+.toast{position:fixed;left:16px;right:16px;margin-inline:auto;max-width:440px;bottom:calc(98px + env(safe-area-inset-bottom,0px));z-index:80;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 10px 10px 16px;min-height:52px;border-radius:17px;background:var(--fg);color:var(--bg);font-weight:500;font-size:14px;box-shadow:0 14px 40px -12px rgba(0,0,0,.7);transform:translateY(16px);opacity:0;pointer-events:none;transition:transform .45s var(--spring),opacity .25s}
+.toast.show{transform:none;opacity:1;pointer-events:auto}
+.toast button{min-height:38px;padding:0 14px;border-radius:11px;background:var(--bg);color:var(--fg);font-weight:600;font-size:13px;flex:none}
+body.tab-today .toast{bottom:calc(178px + env(safe-area-inset-bottom,0px))}
+body.has-sheet .toast{bottom:auto;top:calc(12px + env(safe-area-inset-top,0px));transform:translateY(-16px)}
+body.has-sheet .toast.show{transform:none}
+
+@media (min-width:600px){ .hero{grid-template-columns:200px minmax(0,1fr)} .ring-wrap{max-width:200px} }
+@media (max-width:360px){ .hero{grid-template-columns:minmax(0,140px) minmax(0,1fr);gap:16px} .big{font-size:38px} .ring-c b{font-size:29px} .macros{gap:14px 10px} .mac-v b{font-size:19px} .seg button{font-size:12px} }
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  .scanning .scan{animation:none;background:rgba(255,122,61,.14)}
+}
+
+/* Standalone app additions */
+[hidden]:not([hidden=until-found i]){display:none!important}
+img{max-width:100%}
+body{padding-top:env(safe-area-inset-top,0px);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));min-height:100vh;min-height:100dvh}
+a{color:var(--kcal);text-underline-offset:2px;text-decoration-thickness:1px}
+.setup{display:flex;align-items:center;gap:14px;padding:14px 14px 14px 16px;border-radius:20px;background:linear-gradient(120deg,rgba(255,148,69,.14),rgba(255,74,51,.07));border:1px solid rgba(255,122,61,.3)}
+.setup>div{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.setup-t{font-weight:650}
+.btn.sm{min-height:44px;padding:0 16px;font-size:14px;border-radius:14px}
+.g-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.pill{font-size:12px;font-weight:650;padding:4px 10px;border-radius:999px;white-space:nowrap}
+.pill.ok{color:var(--ok);background:rgba(118,212,179,.12)}
+.pill.warn{color:var(--warn);background:rgba(232,195,106,.12)}
+.key-row{display:flex;gap:8px}
+.key-row .input{flex:1;min-width:0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.02em}
+.key-row .btn.sq{min-height:48px;width:52px}
+.check{display:flex;align-items:center;gap:10px;min-height:44px;font-size:14px;color:var(--muted);cursor:pointer}
+.check input{width:20px;height:20px;accent-color:var(--kcal);margin:0;flex:none}
+.t-ok{color:var(--ok)}
+.t-bad{color:var(--bad)}
+.t-busy{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px}
+.tech{font-size:11.5px;color:var(--faint);word-break:break-word}
+.danger-row{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:14px}
+.res-key{display:flex;flex-direction:column;gap:10px}
+</style>
+</head>
+<body>
+<div id="app" lang="tr">
+  <main>
+    <div class="offline" id="offline" role="status" hidden></div>
+    <section class="view" id="v-today" aria-label="Bugün"></section>
+    <section class="view" id="v-history" aria-label="Geçmiş" hidden></section>
+    <section class="view" id="v-settings" aria-label="Ayarlar" hidden></section>
+  </main>
+  <div class="bottom"><div class="bottom-in" id="bottom"></div></div>
+  <input class="vh" type="file" id="in-cam" accept="image/*" capture="environment" tabindex="-1" aria-hidden="true">
+  <input class="vh" type="file" id="in-gal" accept="image/*" tabindex="-1" aria-hidden="true">
+  <input class="vh" type="file" id="in-backup" accept="application/json,.json" tabindex="-1" aria-hidden="true">
+  <div id="sheets"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</div>
+
+<script>
+(function () {
+'use strict';
+
+/* ---------------- helpers ---------------- */
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const num = v => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : 0; };
+const parseNum = s => { const n = Number(String(s == null ? '' : s).replace(',', '.').replace(/[^\d.]/g, '')); return Number.isFinite(n) && n > 0 ? n : 0; };
+const NF0 = new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 });
+const NF1 = new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 1 });
+const fk = n => NF0.format(Math.round(n || 0));
+const fg = n => { n = n || 0; return n >= 10 ? NF0.format(Math.round(n)) : NF1.format(Math.round(n * 10) / 10); };
+const newId = () => { try { return crypto.randomUUID().replace(/-/g, '').slice(0, 20); } catch (e) { return (Date.now().toString(36) + Math.random().toString(36).slice(2, 12)).slice(0, 20); } };
+const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isStandalone = () => { try { return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; } catch (e) { return false; } };
+
+const WD = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+const WD_LONG = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+const MO = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+const MO_LONG = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+const pad = n => String(n).padStart(2, '0');
+const dayKey = d => { d = d || new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+const parseDay = k => { const p = k.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); };
+const addDays = (k, n) => { const d = parseDay(k); d.setDate(d.getDate() + n); return dayKey(d); };
+const todayKey = () => dayKey(new Date());
+const longDate = k => { const d = parseDay(k); return d.getDate() + ' ' + MO_LONG[d.getMonth()] + (d.getFullYear() !== new Date().getFullYear() ? ' ' + d.getFullYear() : ''); };
+const timeOf = ts => { const d = new Date(ts); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+function eyebrowFor(k) {
+  const t = todayKey(), w = WD_LONG[parseDay(k).getDay()];
+  if (k === t) return 'Bugün · ' + w;
+  if (k === addDays(t, -1)) return 'Dün · ' + w;
+  return w;
+}
+function dayName(k) {
+  const t = todayKey();
+  if (k === t) return 'Bugün';
+  if (k === addDays(t, -1)) return 'Dün';
+  const d = parseDay(k);
+  return d.getDate() + ' ' + MO_LONG[d.getMonth()] + ' ' + WD[d.getDay()];
+}
+function typeForHour(h) {
+  if (h >= 5 && h < 11) return 'breakfast';
+  if (h >= 11 && h < 16) return 'lunch';
+  if (h >= 18 && h < 23) return 'dinner';
+  return 'snack';
+}
+
+/* ---------------- icons ---------------- */
+const ICONS = {
+  camera: '<path d="M4 8.5h2.8L8.4 6h7.2l1.6 2.5H20a1 1 0 0 1 1 1V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.4"/>',
+  image: '<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="9.5" r="1.6"/><path d="M20.5 15.5 16 11l-8.5 8.5"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  x: '<path d="m6.5 6.5 11 11M17.5 6.5l-11 11"/>',
+  chevL: '<path d="M14.5 5.5 8 12l6.5 6.5"/>',
+  chevR: '<path d="M9.5 5.5 16 12l-6.5 6.5"/>',
+  plate: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/>',
+  bars: '<path d="M5 19.5v-7M10 19.5v-14M15 19.5v-9M20 19.5v-12"/>',
+  sliders: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
+  trash: '<path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l.9 12.1a1.5 1.5 0 0 0 1.5 1.4h6.2a1.5 1.5 0 0 0 1.5-1.4L17.5 7M10 11v6M14 11v6"/>',
+  download: '<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/>',
+  upload: '<path d="M12 15.5v-11M7.5 9 12 4.5 16.5 9M5 19.5h14"/>',
+  sun: '<circle cx="12" cy="12" r="3.8"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/>',
+  sunrise: '<path d="M3 18.5h18M6.5 18.5a5.5 5.5 0 0 1 11 0M12 5v3.5M4.6 11.1l1.6 1.2M19.4 11.1l-1.6 1.2M9.5 7 12 5l2.5 2"/>',
+  moon: '<path d="M19.5 14.6A7.8 7.8 0 1 1 9.4 4.5a6.2 6.2 0 0 0 10.1 10.1z"/>',
+  apple: '<path d="M12 8.2c-1.2-1-4.6-1.6-6 1-1.6 3 .4 10.3 3.6 10.3.9 0 1.5-.5 2.4-.5s1.5.5 2.4.5c3.2 0 5.2-7.3 3.6-10.3-1.4-2.6-4.8-2-6-1z"/><path d="M12 8.2c0-2 .9-3.6 2.8-4.2"/>',
+  pen: '<path d="M4.5 19.5h4l10-10a2.1 2.1 0 0 0-3-3l-10 10v3z"/><path d="m13.5 8.5 2 2"/>',
+  eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
+  key: '<circle cx="8" cy="15" r="3.5"/><path d="m10.5 12.5 8-8M15.5 7.5l2.5 2.5M17.5 5.5l2 2"/>',
+  wifiOff: '<path d="m3 3 18 18M8.6 15.6a4.8 4.8 0 0 1 6.1-.4M5 12a9.7 9.7 0 0 1 4.3-2.4M19 12a9.7 9.7 0 0 0-2.6-1.8M2 8.6a14.6 14.6 0 0 1 4.6-2.8M22 8.6A14.6 14.6 0 0 0 11 5"/><circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"/>'
+};
+const ic = name => '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONS[name] || '') + '</svg>';
+
+/* ---------------- nutrition model ---------------- */
+const NUT = ['calories', 'protein_g', 'carbs_g', 'fat_g', 'fiber_g', 'sugar_g'];
+const MAC = [
+  { k: 'protein_g', g: 'protein', label: 'Protein', s: 'P', c: 'var(--pro)' },
+  { k: 'carbs_g', g: 'carbs', label: 'Karbonhidrat', s: 'K', c: 'var(--carb)' },
+  { k: 'fat_g', g: 'fat', label: 'Yağ', s: 'Y', c: 'var(--fat)' },
+  { k: 'fiber_g', g: 'fiber', label: 'Lif', s: 'Lif', c: 'var(--fib)' },
+  { k: 'sugar_g', g: 'sugar', label: 'Şeker', s: 'Şeker', c: 'var(--sug)', limit: true }
+];
+const TYPES = [
+  { k: 'breakfast', label: 'Kahvaltı', added: 'Kahvaltıya eklendi', moved: 'Kahvaltıya taşındı', icon: 'sunrise' },
+  { k: 'lunch', label: 'Öğle', added: 'Öğle yemeğine eklendi', moved: 'Öğle yemeğine taşındı', icon: 'sun' },
+  { k: 'dinner', label: 'Akşam', added: 'Akşam yemeğine eklendi', moved: 'Akşam yemeğine taşındı', icon: 'moon' },
+  { k: 'snack', label: 'Atıştırmalık', added: 'Atıştırmalıklara eklendi', moved: 'Atıştırmalıklara taşındı', icon: 'apple' }
+];
+const typeOf = k => TYPES.find(t => t.k === k) || TYPES[3];
+const ACT = {
+  sedentary: { f: 1.2, label: 'Hareketsiz', d: 'Masa başı iş, düzenli egzersiz yok.' },
+  light: { f: 1.375, label: 'Az', d: 'Haftada 1–3 gün hafif egzersiz ya da gün içinde yürüyüş.' },
+  moderate: { f: 1.55, label: 'Orta', d: 'Haftada 3–5 gün orta tempolu egzersiz.' },
+  active: { f: 1.725, label: 'Yoğun', d: 'Haftada 6–7 gün yoğun egzersiz ya da fiziksel iş.' }
+};
+const zero = () => ({ calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0, sugar_g: 0 });
+const CAPS = { calories: 900, protein_g: 100, carbs_g: 100, fat_g: 100, fiber_g: 100, sugar_g: 100 };
+const defaultMax = g => Math.max(300, Math.ceil(g * 2.5 / 50) * 50);
+function itemVals(it) { const f = (it.grams || 0) / 100, o = zero(); for (const k of NUT) o[k] = ((it.per100 && it.per100[k]) || 0) * f; return o; }
+function sumItems(items) { const o = zero(); for (const it of items) { const v = itemVals(it); for (const k of NUT) o[k] += v[k]; } return o; }
+function sumEntries(list) { const o = zero(); for (const e of list) { const v = sumItems(e.items); for (const k of NUT) o[k] += v[k]; } return o; }
+
+function cleanItem(it) {
+  if (!it || typeof it !== 'object') return null;
+  const p = it.per100 || {}, per100 = {};
+  for (const k of NUT) per100[k] = clamp(num(p[k]), 0, CAPS[k]);
+  const grams = clamp(num(it.grams), 0, 5000);
+  const conf = it.conf == null || it.conf === '' ? null : clamp(Number(it.conf) || 0, 0, 1);
+  const max = clamp(Math.max(num(it.max) || defaultMax(grams), grams), 50, 5000);
+  return { name: String(it.name || 'Yemek').trim().slice(0, 80) || 'Yemek', grams, per100, conf, max };
+}
+// Build an item from values given for a whole portion. Grams are raised if the values are physically impossible for that weight.
+function itemFromPortion(name, grams, vals, conf) {
+  let g = num(grams) || 100;
+  const need = Math.max(num(vals.calories) / 9, num(vals.protein_g), num(vals.carbs_g), num(vals.fat_g), num(vals.fiber_g), num(vals.sugar_g));
+  if (need > g) g = Math.ceil(need);
+  const per100 = {};
+  for (const k of NUT) per100[k] = num(vals[k]) / g * 100;
+  return cleanItem({ name, grams: g, per100, conf, max: defaultMax(g) });
+}
+const ID_RE = /^[A-Za-z0-9_-]{4,64}$/;
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+function cleanEntry(e) {
+  if (!e || typeof e !== 'object' || !ID_RE.test(String(e.id || '')) || !DAY_RE.test(String(e.day || ''))) return null;
+  const items = (Array.isArray(e.items) ? e.items : []).map(cleanItem).filter(Boolean).slice(0, 40);
+  return {
+    id: e.id, day: e.day, ts: Number(e.ts) || Date.now(), type: typeOf(e.type).k, items,
+    notes: String(e.notes || '').slice(0, 400), hasPhoto: !!e.hasPhoto,
+    source: ['photo', 'text', 'manual'].includes(e.source) ? e.source : 'manual', v: 1
+  };
+}
+
+const DEFAULTS = { goal: { kcal: 2000, protein: 120, carbs: 225, fat: 65, fiber: 28, sugar: 50 }, profile: { height: null, weight: null, age: null, sex: null, activity: 'light', target: 'keep' } };
+function mergeSettings(s) {
+  const o = clone(DEFAULTS);
+  if (s && typeof s === 'object') {
+    if (s.goal) for (const k in o.goal) { const v = num(s.goal[k]); if (v) o.goal[k] = Math.round(Math.min(v, k === 'kcal' ? 10000 : 2000)); }
+    if (s.profile) {
+      const p = s.profile;
+      for (const k of ['height', 'weight', 'age']) o.profile[k] = num(p[k]) || null;
+      if (p.sex === 'female' || p.sex === 'male') o.profile.sex = p.sex;
+      if (ACT[p.activity]) o.profile.activity = p.activity;
+      if (['lose', 'keep', 'gain'].includes(p.target)) o.profile.target = p.target;
+    }
+  }
+  return o;
+}
+function recommend(p) {
+  const h = num(p.height), w = num(p.weight), a = num(p.age);
+  if (!(h >= 120 && h <= 230 && w >= 30 && w <= 300 && a >= 15 && a <= 100 && p.sex)) return null;
+  const bmr = 10 * w + 6.25 * h - 5 * a + (p.sex === 'male' ? 5 : -161);
+  const tdee = bmr * (ACT[p.activity] || ACT.light).f;
+  let kcal = p.target === 'lose' ? tdee - 500 : p.target === 'gain' ? tdee + 300 : tdee;
+  const floor = p.sex === 'male' ? 1500 : 1200;
+  const floored = kcal < floor;
+  kcal = Math.round(Math.max(kcal, floor) / 10) * 10;
+  const protein = Math.round(w * (p.target === 'keep' ? 1.6 : 1.8));
+  const fat = Math.round(kcal * 0.28 / 9);
+  const carbs = Math.max(0, Math.round((kcal - protein * 4 - fat * 9) / 4));
+  return { bmr, tdee, kcal, protein, fat, carbs, fiber: Math.round(kcal / 1000 * 14), sugar: Math.round(kcal * 0.1 / 4), floored };
+}
+
+const AI_DEFAULT = { key: '', model: 'auto', custom: '', lastUsed: '' };
+const MODEL_RE = /^[a-z0-9][a-z0-9.\-]{2,79}$/;
+function mergeAI(a) {
+  const o = clone(AI_DEFAULT);
+  if (a && typeof a === 'object') {
+    o.key = cleanKey(a.key);
+    if (['auto', 'lite', 'custom'].includes(a.model)) o.model = a.model;
+    if (MODEL_RE.test(String(a.custom || ''))) o.custom = String(a.custom);
+    if (MODEL_RE.test(String(a.lastUsed || ''))) o.lastUsed = String(a.lastUsed);
+  }
+  return o;
+}
+const cleanKey = k => String(k || '').replace(/[\s"'`]/g, '').slice(0, 200);
+
+/* ---------------- on-device storage (IndexedDB, with fallbacks) ---------------- */
+const LS = {
+  get(k) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } },
+  del(k) { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } }
+};
+const fullErr = e => (e && (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 'local_full')) ? { code: 'local_full' } : (e && e.code ? e : { code: 'store', msg: String((e && (e.message || e.name)) || e) });
+
+const Store = {
+  kind: 'mem', db: null, mem: { meals: {}, photos: {}, kv: {} },
+  async init() {
+    try { this.db = await this.open(); this.kind = 'idb'; return; } catch (e) { /* fall through */ }
+    try { localStorage.setItem('lokma.t', '1'); localStorage.removeItem('lokma.t'); this.kind = 'ls'; this.mem.meals = LS.get('lokma.meals') || {}; this.mem.kv = LS.get('lokma.kv') || {}; }
+    catch (e) { this.kind = 'mem'; }
+  },
+  open() {
+    return new Promise((resolve, reject) => {
+      if (!window.indexedDB) { reject(new Error('no idb')); return; }
+      let rq;
+      try { rq = indexedDB.open('lokma', 1); } catch (e) { reject(e); return; }
+      rq.onupgradeneeded = () => {
+        const d = rq.result;
+        if (!d.objectStoreNames.contains('meals')) d.createObjectStore('meals', { keyPath: 'id' });
+        if (!d.objectStoreNames.contains('photos')) d.createObjectStore('photos');
+        if (!d.objectStoreNames.contains('kv')) d.createObjectStore('kv');
+      };
+      rq.onsuccess = () => { const d = rq.result; d.onversionchange = () => d.close(); resolve(d); };
+      rq.onerror = () => reject(rq.error);
+      rq.onblocked = () => reject(new Error('blocked'));
+    });
+  },
+  tx(store, mode, fn) {
+    return new Promise((resolve, reject) => {
+      let t, out;
+      try { t = this.db.transaction(store, mode); } catch (e) { reject(fullErr(e)); return; }
+      const r = fn(t.objectStore(store));
+      if (r) r.onsuccess = () => { out = r.result; };
+      t.oncomplete = () => resolve(out);
+      t.onerror = () => reject(fullErr(t.error));
+      t.onabort = () => reject(fullErr(t.error || new Error('abort')));
+    });
+  },
+  persistLS() { if (this.kind === 'ls' && (!LS.set('lokma.meals', this.mem.meals) || !LS.set('lokma.kv', this.mem.kv))) throw { code: 'local_full' }; },
+  async loadMeals() { return this.kind === 'idb' ? this.tx('meals', 'readonly', s => s.getAll()) : Object.values(this.mem.meals); },
+  async putMeal(e) {
+    if (this.kind === 'idb') return this.tx('meals', 'readwrite', s => { s.put(e); });
+    this.mem.meals[e.id] = clone(e); this.persistLS();
+  },
+  async putMeals(list) {
+    if (this.kind === 'idb') return this.tx('meals', 'readwrite', s => { for (const e of list) s.put(e); });
+    for (const e of list) this.mem.meals[e.id] = clone(e); this.persistLS();
+  },
+  async delMeal(id) {
+    if (this.kind === 'idb') return this.tx('meals', 'readwrite', s => { s.delete(id); });
+    delete this.mem.meals[id]; this.persistLS();
+  },
+  async getPhoto(id) {
+    if (this.kind === 'idb') return this.tx('photos', 'readonly', s => s.get(id));
+    return this.kind === 'ls' ? LS.get('lokma.photo.' + id) : this.mem.photos[id];
+  },
+  async putPhotos(map) {
+    const ids = Object.keys(map);
+    if (!ids.length) return;
+    if (this.kind === 'idb') return this.tx('photos', 'readwrite', s => { for (const id of ids) s.put(map[id], id); });
+    for (const id of ids) {
+      if (this.kind === 'ls') { if (!LS.set('lokma.photo.' + id, map[id])) throw { code: 'local_full' }; }
+      else this.mem.photos[id] = map[id];
+    }
+  },
+  putPhoto(id, v) { return this.putPhotos({ [id]: v }); },
+  async delPhoto(id) {
+    if (this.kind === 'idb') return this.tx('photos', 'readwrite', s => { s.delete(id); });
+    if (this.kind === 'ls') LS.del('lokma.photo.' + id); else delete this.mem.photos[id];
+  },
+  async getKV(k) { return this.kind === 'idb' ? this.tx('kv', 'readonly', s => s.get(k)) : this.mem.kv[k]; },
+  async setKV(k, v) {
+    if (this.kind === 'idb') return this.tx('kv', 'readwrite', s => { s.put(v, k); });
+    this.mem.kv[k] = clone(v); this.persistLS();
+  },
+  async clearMeals() {
+    if (this.kind === 'idb') { await this.tx('meals', 'readwrite', s => { s.clear(); }); return this.tx('photos', 'readwrite', s => { s.clear(); }); }
+    if (this.kind === 'ls') for (const id of Object.keys(this.mem.meals)) LS.del('lokma.photo.' + id);
+    this.mem.meals = {}; this.mem.photos = {}; this.persistLS();
+  }
+};
+
+/* ---------------- state ---------------- */
+const S = {
+  ready: false, entries: new Map(), settings: clone(DEFAULTS), ai: clone(AI_DEFAULT),
+  photos: new Map(), photoReq: new Map(), dirty: new Map(), chains: new Map(),
+  tab: 'today', viewDay: todayKey(), lastToday: todayKey(), ringOff: null, animDay: null,
+  histRange: 'day', histSel: null, histAnim: true,
+  pending: null, bk: null, bkPhotos: true, legacy: false, skip: new Map(),
+  installEvt: null, persisted: null, est: null, aiTest: null, wipe: false, keyEye: false
+};
+
+function queueWrite(key, fn) {
+  const prev = S.chains.get(key) || Promise.resolve();
+  const next = prev.catch(() => {}).then(fn);
+  S.chains.set(key, next);
+  const done = () => { if (S.chains.get(key) === next) S.chains.delete(key); };
+  next.then(done, done);
+  return next;
+}
+function dbErrText(e) {
+  const c = e && e.code;
+  if (c === 'local_full') return 'Cihazdaki depolama alanı doldu. Yedek alıp eski kayıtları sil.';
+  return 'Kaydedilemedi. Uygulamayı kapatıp yeniden açmayı dene.';
+}
+let persistAsked = false;
+function askPersist() {
+  if (persistAsked || !navigator.storage || !navigator.storage.persist) return;
+  persistAsked = true;
+  navigator.storage.persist().then(p => { S.persisted = p; }).catch(() => {});
+}
+
+async function saveEntry(entry, thumb) {
+  const prev = S.entries.get(entry.id);
+  S.entries.set(entry.id, entry);
+  if (thumb) S.photos.set(entry.id, thumb);
+  requestRender();
+  try {
+    if (thumb) {
+      try { await queueWrite('p:' + entry.id, () => Store.putPhoto(entry.id, thumb)); }
+      catch (e) { entry.hasPhoto = false; toast('Fotoğraf önizlemesi saklanamadı, depolama dolu.'); }
+    }
+    await queueWrite(entry.id, () => Store.putMeal(clone(entry)));
+  } catch (e) {
+    if (prev) S.entries.set(entry.id, prev); else S.entries.delete(entry.id);
+    requestRender();
+    throw fullErr(e);
+  }
+  askPersist();
+}
+function touchEntry(id) {
+  if (!S.entries.get(id)) return;
+  requestRender();
+  clearTimeout(S.dirty.get(id));
+  S.dirty.set(id, setTimeout(() => {
+    S.dirty.delete(id);
+    const cur = S.entries.get(id);
+    if (!cur) return;
+    queueWrite(id, () => Store.putMeal(clone(cur))).catch(err => toast(dbErrText(fullErr(err))));
+  }, 400));
+}
+async function removeEntry(id) {
+  const e = S.entries.get(id);
+  if (!e) return;
+  const photo = e.hasPhoto ? await getPhoto(id) : '';
+  clearTimeout(S.dirty.get(id)); S.dirty.delete(id);
+  S.entries.delete(id);
+  requestRender(); repaintMeal();
+  try {
+    await queueWrite(id, () => Store.delMeal(id));
+    if (e.hasPhoto) { S.photos.delete(id); queueWrite('p:' + id, () => Store.delPhoto(id)).catch(() => {}); }
+  } catch (err) {
+    S.entries.set(id, e); requestRender(); repaintMeal(); toast(dbErrText(fullErr(err))); return;
+  }
+  toast('Kayıt silindi', {
+    action: 'Geri al', onAction: async () => {
+      try { await saveEntry(cleanEntry(e), photo || null); repaintMeal(); toast('Geri alındı'); }
+      catch (er) { toast(dbErrText(er)); }
+    }
+  });
+}
+function getPhoto(id) {
+  if (S.photos.has(id)) return Promise.resolve(S.photos.get(id));
+  if (S.photoReq.has(id)) return S.photoReq.get(id);
+  const p = Store.getPhoto(id).catch(() => '').then(v => {
+    S.photoReq.delete(id);
+    v = typeof v === 'string' ? v : '';
+    if (v.indexOf('data:image/') === 0) { S.photos.set(id, v); return v; }
+    return '';
+  });
+  S.photoReq.set(id, p);
+  return p;
+}
+function hydratePhotos(root) {
+  for (const img of $$('img[data-photo]', root)) {
+    const id = img.dataset.photo, c = S.photos.get(id);
+    if (c) { img.classList.add('ld'); img.src = c; continue; }
+    getPhoto(id).then(v => { if (v && img.isConnected) { img.onload = () => img.classList.add('ld'); img.src = v; } });
+  }
+}
+let setT = 0;
+function saveSettings(now) {
+  clearTimeout(setT);
+  const go = () => Store.setKV('settings', clone(S.settings)).catch(e => toast(dbErrText(fullErr(e))));
+  if (now) return go();
+  setT = setTimeout(go, 400);
+}
+function saveAI() { return Store.setKV('ai', clone(S.ai)).catch(e => toast(dbErrText(fullErr(e)))); }
+
+/* ---------------- boot ---------------- */
+async function boot() {
+  renderCurrent();
+  await Store.init();
+  try {
+    const res = await Promise.all([Store.loadMeals(), Store.getKV('settings'), Store.getKV('ai')]);
+    for (const raw of res[0] || []) { const e = cleanEntry(raw); if (e) S.entries.set(e.id, e); }
+    if (res[1]) S.settings = mergeSettings(res[1]);
+    if (res[2]) S.ai = mergeAI(res[2]);
+  } catch (e) {
+    toast('Kayıtlar okunamadı. Uygulamayı yeniden aç.');
+  }
+  S.ready = true;
+  renderCurrent();
+  if (navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(p => { S.persisted = p; if (p) persistAsked = true; }).catch(() => {});
+}
+
+/* ---------------- rendering ---------------- */
+let rq = 0;
+function requestRender() { if (rq) return; rq = requestAnimationFrame(() => { rq = 0; renderCurrent(); }); }
+function renderCurrent() {
+  const t = todayKey();
+  if (t !== S.lastToday) { if (S.viewDay === S.lastToday) S.viewDay = t; S.lastToday = t; }
+  if (S.tab === 'today') renderToday();
+  else if (S.tab === 'history') renderHistory();
+  else if (S.tab === 'settings') { const v = $('#v-settings'); if (!v.contains(document.activeElement)) renderSettings(); }
+}
+function groupDay(k) {
+  const g = {};
+  for (const t of TYPES) g[t.k] = [];
+  for (const e of S.entries.values()) if (e.day === k) g[typeOf(e.type).k].push(e);
+  for (const t in g) g[t].sort((a, b) => a.ts - b.ts);
+  return g;
+}
+function previewNames(names) {
+  if (!names.length) return 'Kalem yok';
+  return names.slice(0, 3).join(', ') + (names.length > 3 ? ' +' + (names.length - 3) : '');
+}
+function presetAttrs(type, day) { return 'data-preset="1"' + (type ? ' data-ptype="' + type + '"' : '') + (day ? ' data-pday="' + day + '"' : ''); }
+
+function renderToday() {
+  const el = $('#v-today');
+  const k = S.viewDay, t = todayKey(), isT = k === t;
+  const groups = groupDay(k);
+  const all = TYPES.flatMap(T => groups[T.k]);
+  const tot = sumEntries(all), G = S.settings.goal;
+  const left = Math.round(G.kcal - tot.calories);
+  const pct = G.kcal ? tot.calories / G.kcal : 0;
+  const C = 2 * Math.PI * 66, off = C * (1 - Math.min(pct, 1));
+  const from = S.ringOff == null ? C : S.ringOff;
+  const anim = S.animDay !== k;
+  S.animDay = k;
+
+  let h = '<header class="day-head"><div><p class="eyebrow">' + esc(eyebrowFor(k)) + '</p><h1>' + esc(longDate(k)) + '</h1></div>' +
+    '<div class="day-nav"><button class="icon-btn" data-act="day-prev" aria-label="Önceki gün">' + ic('chevL') + '</button>' +
+    (isT ? '' : '<button class="chip" data-act="day-today">Bugün</button>') +
+    '<button class="icon-btn" data-act="day-next" aria-label="Sonraki gün"' + (isT ? ' disabled' : '') + '>' + ic('chevR') + '</button></div></header>';
+
+  if (S.ready && !S.ai.key) {
+    h += '<section class="setup" aria-label="Kurulum"><div><p class="setup-t">Fotoğraftan kalori için bir adım kaldı</p>' +
+      '<p class="fine">Ücretsiz Gemini anahtarını ekle, 2 dakika sürer.</p></div><button class="btn primary sm" data-act="go-ai">Kur</button></section>';
+  }
+
+  h += '<section class="hero" aria-label="Kalori özeti"><div class="ring-wrap"><svg class="ring" viewBox="0 0 160 160" aria-hidden="true">' +
+    '<defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFA24A"/><stop offset="1" stop-color="#FF4A33"/></linearGradient></defs>' +
+    '<circle cx="80" cy="80" r="66" class="ring-track"/>' +
+    '<circle cx="80" cy="80" r="66" class="ring-val' + (pct > 1 ? ' over' : '') + (tot.calories < 1 ? ' zero' : '') + '" stroke-dasharray="' + C.toFixed(2) + '" stroke-dashoffset="' + from.toFixed(2) + '" data-to="' + off.toFixed(2) + '" transform="rotate(-90 80 80)"/></svg>' +
+    '<div class="ring-c"><b class="num">' + fk(tot.calories) + '</b><span class="num">/ ' + fk(G.kcal) + ' kcal</span></div></div>' +
+    '<div class="hero-side">' +
+    (left >= 0
+      ? '<p class="eyebrow">Kalan</p><p class="big num">' + fk(left) + '<small>kcal</small></p>'
+      : '<p class="eyebrow hot">Hedefin üstünde</p><p class="big num hot">+' + fk(-left) + '<small>kcal</small></p>') +
+    '<p class="sub num">%' + Math.round(pct * 100) + ' tamamlandı</p></div></section>';
+
+  const macro = (m, big) => {
+    const v = tot[m.k], g = G[m.g] || 1, p = Math.min(1, v / g);
+    return '<div class="mac' + (big ? '' : ' mini') + (m.limit && v > g ? ' warn' : '') + '" style="--c:' + m.c + '">' +
+      '<span class="mac-l">' + m.label + (m.limit ? ' <em>üst sınır</em>' : '') + '</span>' +
+      '<span class="mac-v num"><b>' + fg(v) + '</b> / ' + fk(g) + ' g</span>' +
+      '<span class="bar"><i style="width:' + (p * 100).toFixed(1) + '%"></i></span></div>';
+  };
+  h += '<div class="macro-wrap' + (anim ? ' anim' : '') + '" style="display:flex;flex-direction:column;gap:22px">' +
+    '<section class="macros" aria-label="Makrolar">' + MAC.slice(0, 3).map(m => macro(m, true)).join('') + '</section>' +
+    '<section class="macros minor">' + MAC.slice(3).map(m => macro(m, false)).join('') + '</section></div>';
+
+  h += '<section aria-label="Öğünler"><div class="sec-head"><h2>Öğünler</h2><button class="link" data-act="manual">' + ic('pen') + 'Elle ekle</button></div><div class="meal-list">';
+  for (const T of TYPES) {
+    const list = groups[T.k];
+    if (list.length) {
+      const mt = sumEntries(list);
+      const names = list.flatMap(e => e.items.map(i => i.name));
+      const ph = list.find(e => e.hasPhoto);
+      h += '<button class="meal" data-act="open-meal" data-type="' + T.k + '">' +
+        '<span class="thumb">' + ic(T.icon) + (ph ? '<img data-photo="' + ph.id + '" alt="">' : '') + '</span>' +
+        '<span class="meal-main"><span class="meal-n">' + T.label + '<span class="meal-time num">' + timeOf(list[0].ts) + '</span></span>' +
+        '<span class="meal-items">' + esc(previewNames(names)) + '</span>' +
+        '<span class="meal-mac num">' + MAC.slice(0, 3).map(m => '<span><i style="--c:' + m.c + '">' + m.s + '</i>' + fg(mt[m.k]) + '</span>').join('') + '</span></span>' +
+        '<span class="meal-k"><b class="num">' + fk(mt.calories) + '</b><span>kcal</span></span></button>';
+    } else {
+      h += '<label class="meal empty" for="in-cam" tabindex="0" ' + presetAttrs(T.k, k) + '><span class="thumb">' + ic(T.icon) + '</span>' +
+        '<span class="meal-n">' + T.label + '</span><span class="meal-plus">' + ic('camera') + 'Ekle</span></label>';
+    }
+  }
+  h += '</div>';
+  if (!all.length) {
+    if (!S.ready) h += '<p class="hint-line">Kayıtların yükleniyor…</p>';
+    else h += '<p class="hint-line">' + (isT ? 'Henüz kayıt yok. Aşağıdaki <b>Fotoğraf Çek</b> düğmesiyle ilk öğününü ekle.' : 'Bu gün için kayıt yok.') + '</p>';
+  }
+  if (S.ready && Store.kind === 'mem') h += '<p class="fine" style="margin-top:14px;color:var(--warn)">Bu tarayıcı veri saklamaya izin vermiyor (gizli sekme olabilir). Uygulama kapanınca kayıtlar silinir.</p>';
+  h += '</section>';
+
+  el.innerHTML = h;
+  hydratePhotos(el);
+  const ring = $('.ring-val', el);
+  if (ring) { ring.getBoundingClientRect(); requestAnimationFrame(() => { ring.style.strokeDashoffset = ring.dataset.to; }); }
+  S.ringOff = off;
+}
+
+/* ---------------- sheets ---------------- */
+const stack = [];
+function openSheet(id, ctx, render) {
+  const wrap = document.createElement('div');
+  wrap.className = 'sheet-wrap';
+  wrap.innerHTML = '<div class="sheet-backdrop" data-act="close-sheet"></div><div class="sheet" role="dialog" aria-modal="true" tabindex="-1"></div>';
+  $('#sheets').appendChild(wrap);
+  const sh = { id, ctx, render, wrap, el: wrap.querySelector('.sheet'), onClose: null };
+  stack.push(sh);
+  sh.el.addEventListener('input', ev => onSheetInput(sh, ev));
+  paint(sh);
+  document.body.classList.add('has-sheet');
+  requestAnimationFrame(() => requestAnimationFrame(() => { wrap.classList.add('open'); try { sh.el.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }));
+  return sh;
+}
+function paint(sh) {
+  const st = sh.el.scrollTop;
+  sh.el.innerHTML = sh.render(sh);
+  sh.el.scrollTop = st;
+  hydratePhotos(sh.el);
+}
+function closeSheet(sh) {
+  sh = sh || stack[stack.length - 1];
+  const i = stack.indexOf(sh);
+  if (i < 0) return;
+  stack.splice(i, 1);
+  if (sh.onClose) sh.onClose();
+  sh.wrap.classList.remove('open');
+  let gone = false;
+  const rm = () => { if (!gone) { gone = true; sh.wrap.remove(); } };
+  sh.wrap.addEventListener('transitionend', e => { if (e.target === sh.el) rm(); });
+  setTimeout(rm, 600);
+  if (!stack.length) document.body.classList.remove('has-sheet');
+  const top = stack[stack.length - 1];
+  if (top && top.id === 'meal') paint(top);
+}
+const sheetFor = el => stack.find(s => s.wrap.contains(el));
+const findSheet = id => stack.find(s => s.id === id);
+function repaintMeal() { for (const s of stack) if (s.id === 'meal') paint(s); }
+function sheetHead(title, sub) {
+  return '<div class="sheet-head"><span class="grab" aria-hidden="true"></span><div class="sh-row"><div class="sh-t"><h2>' + esc(title) + '</h2>' +
+    (sub ? '<p>' + esc(sub) + '</p>' : '') + '</div><button class="icon-btn" data-act="close-sheet" aria-label="Kapat">' + ic('x') + '</button></div></div>';
+}
+
+/* ---------------- shared item editor ---------------- */
+function valsLine(it) {
+  const v = itemVals(it);
+  return '<b>' + fk(v.calories) + ' kcal</b>' + MAC.map(m => '<span><i style="background:' + m.c + '"></i>' + m.s + ' ' + fg(v[m.k]) + '</span>').join('');
+}
+function gramEditor(p, it, i, eid) {
+  const g = Math.round(it.grams);
+  const e = eid ? ' data-e="' + eid + '"' : '';
+  return '<div class="ed"><div class="ed-g">' +
+    '<input type="range" id="' + p + '-r-' + i + '" data-f="range" data-i="' + i + '"' + e + ' min="0" max="' + it.max + '" step="5" value="' + g + '" style="--p:' + clamp(g / it.max * 100, 0, 100).toFixed(1) + '%" aria-label="' + esc(it.name) + ' gramajı">' +
+    '<span class="gbox"><input class="input num" type="text" inputmode="numeric" id="' + p + '-g-' + i + '" data-f="grams" data-i="' + i + '"' + e + ' value="' + g + '" aria-label="Gram" autocomplete="off"><span>g</span></span>' +
+    '</div><div class="ed-vals num">' + valsLine(it) + '</div></div>';
+}
+function applyEdit(t, it) {
+  const f = t.dataset.f;
+  if (f === 'name') { it.name = t.value.slice(0, 80); return; }
+  let g = f === 'range' ? Number(t.value) : parseNum(t.value);
+  if (!Number.isFinite(g) || g < 0) g = 0;
+  g = Math.min(g, 5000);
+  it.grams = g;
+  const ed = t.closest('.ed');
+  const rg = $('[data-f="range"]', ed), nb = $('[data-f="grams"]', ed);
+  if (f === 'range') nb.value = String(Math.round(g));
+  else { if (g > it.max) { it.max = defaultMax(g); rg.max = String(it.max); } rg.value = String(Math.round(g)); }
+  rg.style.setProperty('--p', clamp(g / it.max * 100, 0, 100).toFixed(1) + '%');
+  $('.ed-vals', ed).innerHTML = valsLine(it);
+}
+function totHTML(t) {
+  return '<span class="tk"><b class="num">' + fk(t.calories) + '</b> kcal</span><span class="tm num">P ' + fg(t.protein_g) + ' g · K ' + fg(t.carbs_g) + ' g · Y ' + fg(t.fat_g) + ' g</span>';
+}
+function itemFields(p) {
+  const f = (id, label, ph, mode) => '<div class="field"><label for="' + p + '-' + id + '">' + label + '</label><input class="input num" id="' + p + '-' + id + '" type="text" inputmode="' + (mode || 'decimal') + '" placeholder="' + ph + '" autocomplete="off"></div>';
+  return '<div class="field"><label for="' + p + '-name">Yemek adı</label><input class="input" id="' + p + '-name" type="text" maxlength="80" placeholder="ör. Ev yapımı mantı" autocomplete="off"></div>' +
+    '<div class="fgrid">' + f('g', 'Miktar (g)', '100', 'numeric') + f('kcal', 'Kalori (kcal)', '0', 'numeric') + f('p', 'Protein (g)', '0') + f('c', 'Karbonhidrat (g)', '0') + f('f', 'Yağ (g)', '0') + f('fib', 'Lif (g)', '0') + f('sug', 'Şeker (g)', '0') + '</div>' +
+    '<p class="fine">Değerleri yazdığın miktarın tamamı için gir. Kaloriyi boş bırakırsan makrolardan hesaplanır.</p>';
+}
+function readItem(root, p) {
+  const v = id => parseNum(($('#' + p + '-' + id, root) || {}).value);
+  const name = (($('#' + p + '-name', root) || {}).value || '').trim();
+  if (!name) return { err: 'Yemeğin adını yaz.' };
+  const vals = { protein_g: v('p'), carbs_g: v('c'), fat_g: v('f'), fiber_g: v('fib'), sugar_g: v('sug') };
+  vals.calories = v('kcal') || Math.round(vals.protein_g * 4 + vals.carbs_g * 4 + vals.fat_g * 9);
+  if (!vals.calories) return { err: 'Kaloriyi ya da en az bir makroyu gir.' };
+  return { item: itemFromPortion(name, v('g') || 100, vals, null) };
+}
+function openItemForm(onSave) {
+  openSheet('item', { onSave }, () => sheetHead('Kalem ekle') + '<div class="sheet-body">' + itemFields('it') +
+    '<p class="form-err" id="it-err" role="alert"></p><button class="btn primary block" data-act="item-save">Ekle</button></div>');
+}
+
+/* ---------------- photo handling ---------------- */
+function loadImage(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => { resolve(img); setTimeout(() => URL.revokeObjectURL(url), 2000); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode')); };
+    img.src = url;
+  });
+}
+function scaleCanvas(img, max) {
+  const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+  const s = Math.min(1, max / Math.max(w, h));
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(w * s)); c.height = Math.max(1, Math.round(h * s));
+  const x = c.getContext('2d');
+  x.fillStyle = '#ffffff'; x.fillRect(0, 0, c.width, c.height);
+  x.imageSmoothingQuality = 'high';
+  x.drawImage(img, 0, 0, c.width, c.height);
+  return c;
+}
+const toBlob = (c, q) => new Promise((res, rej) => c.toBlob(b => (b ? res(b) : rej(new Error('blob'))), 'image/jpeg', q));
+const blobToB64 = b => new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(',')[1] || ''); fr.onerror = () => rej(fr.error); fr.readAsDataURL(b); });
+
+/* ---------------- Gemini API (free tier, user's own key) ---------------- */
+const API = 'https://generativelanguage.googleapis.com/v1beta/';
+const MODELS = {
+  auto: ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-3.5-flash-lite', 'gemini-flash-lite-latest'],
+  lite: ['gemini-3.5-flash-lite', 'gemini-flash-lite-latest', 'gemini-3.8-flash', 'gemini-flash-latest']
+};
+function modelChain() {
+  if (S.ai.model === 'custom' && S.ai.custom) return [S.ai.custom];
+  return (MODELS[S.ai.model] || MODELS.auto).slice();
+}
+const NUMF = { type: 'number' };
+const RESULT_SCHEMA = {
+  type: 'object',
+  properties: {
+    items: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Specific Turkish food name' },
+          estimated_grams: { type: 'number', description: 'Edible amount of this item in grams' },
+          calories: NUMF, protein_g: NUMF, carbs_g: NUMF, fat_g: NUMF, fiber_g: NUMF, sugar_g: NUMF,
+          confidence: { type: 'number', minimum: 0, maximum: 1 }
+        },
+        required: ['name', 'estimated_grams', 'calories', 'protein_g', 'carbs_g', 'fat_g', 'fiber_g', 'sugar_g', 'confidence']
+      }
+    },
+    notes: { type: 'string' }
+  },
+  required: ['items', 'notes']
+};
+const SCHEMA_TEXT = '{"items":[{"name":"Yemek adı (Türkçe)","estimated_grams":0,"calories":0,"protein_g":0,"carbs_g":0,"fat_g":0,"fiber_g":0,"sugar_g":0,"confidence":0.0}],"notes":"Belirsizlik veya varsayımlar varsa kısa not"}';
+function buildPrompt(r, strict) {
+  const L = [];
+  const q = s => s.replace(/"""/g, '"');
+  const photoMode = r.source === 'photo';
+  if (photoMode) L.push('You are an experienced dietitian. Estimate the nutrition of the meal in the attached photo.');
+  else { L.push('You are an experienced dietitian. The user describes in Turkish what they ate. Estimate its nutrition.'); L.push('User description: """' + q(r.text.slice(0, 1500)) + '"""'); }
+  L.push('', 'Rules:');
+  L.push('- Each distinct food or drink is its own item (for example soup, bread, rice, salad and ayran are five items). Never merge different foods into one item.');
+  L.push('- "name": a natural, specific Turkish food name, e.g. "Mercimek çorbası", "Tereyağlı pirinç pilavı", "Izgara tavuk göğsü", "Çoban salata". Mention the cooking method when it is visible or stated.');
+  if (photoMode) L.push('- "estimated_grams": the edible amount you can see, in grams (drinks: 1 ml ≈ 1 g). Judge size against reference objects in the photo: dinner plate ≈ 26 cm across, side plate ≈ 20 cm, soup bowl ≈ 300 ml, fork ≈ 19 cm, spoon ≈ 15 cm, Turkish tea glass ≈ 100 ml, water glass ≈ 200–250 ml, one slice of bread ≈ 30 g. With no reference object, assume a standard dinner plate.');
+  else L.push('- "estimated_grams": use the amounts the user gives (convert cups, slices, spoons and pieces to grams). When no amount is given, assume one standard Turkish portion and say so in notes.');
+  L.push('- Nutrition values are for the whole estimated portion, not per 100 g. Include cooking oil, butter, sauces and dressings in the item they belong to. Use typical values for Turkish home and restaurant cooking.');
+  L.push('- "confidence" from 0.0 to 1.0 covers both identification and portion size. Lower it when food is hidden, mixed, blurry or hard to size; go below 0.5 when you are guessing.');
+  L.push(photoMode ? '- If the photo shows no food or drink, return "items": [] and explain briefly in notes.' : '- If the text describes no food or drink, return "items": [] and explain briefly in notes.');
+  L.push('- "notes" is one or two short Turkish sentences about assumptions or uncertainty, or "" if there are none.');
+  if (r.hint) L.push('- The user added this correction; trust it over your own visual guess: """' + q(r.hint.slice(0, 400)) + '"""');
+  L.push('', 'Reply with ONLY one JSON object in exactly this shape. Plain numbers without units, no comments, no markdown, nothing before or after the JSON:', SCHEMA_TEXT);
+  if (strict) L.push('', 'Your previous reply could not be parsed. Return only the JSON object this time.');
+  return L.join('\n');
+}
+function tolerantParse(t) {
+  if (!t) return null;
+  let s = String(t).trim();
+  const f = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (f) s = f[1];
+  const a = s.indexOf('{'), b = s.lastIndexOf('}');
+  if (a < 0 || b <= a) {
+    const a2 = s.indexOf('['), b2 = s.lastIndexOf(']');
+    if (a2 < 0 || b2 <= a2) return null;
+    try { return JSON.parse(s.slice(a2, b2 + 1)); } catch (e) { return null; }
+  }
+  s = s.slice(a, b + 1).replace(/,\s*([}\]])/g, '$1');
+  try { return JSON.parse(s); } catch (e) { return null; }
+}
+function normalizeResult(raw) {
+  if (Array.isArray(raw)) raw = { items: raw };
+  if (!raw || typeof raw !== 'object' || !Array.isArray(raw.items)) return null;
+  const items = [];
+  for (const it of raw.items.slice(0, 25)) {
+    if (!it || typeof it !== 'object') continue;
+    const name = String(it.name || '').trim();
+    if (!name) continue;
+    const vals = {};
+    for (const k of NUT) vals[k] = num(it[k]);
+    const conf = it.confidence == null ? null : clamp(Number(it.confidence) || 0, 0, 1);
+    const ci = itemFromPortion(name, num(it.estimated_grams != null ? it.estimated_grams : it.grams), vals, conf);
+    if (ci) items.push(ci);
+  }
+  return { items, notes: typeof raw.notes === 'string' ? raw.notes.trim().slice(0, 400) : '' };
+}
+
+function httpErr(status, data, txt) {
+  const er = (data && (data.error || (Array.isArray(data) && data[0] && data[0].error))) || {};
+  const msg = String(er.message || (typeof txt === 'string' ? txt : '') || '').replace(/\s+/g, ' ').slice(0, 240);
+  const blob = (msg + ' ' + String(er.status || '') + ' ' + String(er.code || '') + ' ' + JSON.stringify(er.details || [])).toLowerCase();
+  let code = 'http';
+  if (/api_key_invalid|api key not valid|api key expired|invalid api key|api_key_service_blocked|api key/.test(blob) && status !== 429 && status !== 404) code = 'bad_key';
+  else if (/location is not supported|user location|unsupported_location|not available in your country/.test(blob)) code = 'region';
+  else if (status === 429 || /resource_exhausted/.test(blob)) code = 'rate_limited';
+  else if (status === 401 || status === 403) code = 'forbidden';
+  else if (status === 404) code = 'not_found';
+  else if (status === 400 || status === 422) code = 'bad_request';
+  else if (status >= 500) code = 'overloaded';
+  const m = blob.match(/retrydelay\\?"?\s*:\s*\\?"?(\d+(?:\.\d+)?)s/) || blob.match(/retry in (\d+(?:\.\d+)?)\s*s/);
+  return { code, status, msg, retryAfter: m ? Math.ceil(Number(m[1])) : null };
+}
+async function postJSON(path, body, signal) {
+  const ctl = new AbortController();
+  let timedOut = false;
+  const onAbort = () => ctl.abort();
+  if (signal) { if (signal.aborted) ctl.abort(); else signal.addEventListener('abort', onAbort, { once: true }); }
+  const timer = setTimeout(() => { timedOut = true; ctl.abort(); }, 60000);
+  let res, txt = '';
+  try {
+    res = await fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': S.ai.key }, body: JSON.stringify(body), signal: ctl.signal, cache: 'no-store', credentials: 'omit' });
+    txt = await res.text();
+  } catch (e) {
+    if (signal && signal.aborted) throw { code: 'cancelled' };
+    if (timedOut) throw { code: 'timeout' };
+    throw { code: navigator.onLine === false ? 'offline' : 'network', msg: String((e && e.message) || '') };
+  } finally {
+    clearTimeout(timer);
+    if (signal) signal.removeEventListener('abort', onAbort);
+  }
+  let data = null;
+  try { data = txt ? JSON.parse(txt) : null; } catch (e) { data = null; }
+  if (!res.ok) throw httpErr(res.status, data, txt);
+  return data;
+}
+function interactionText(d) {
+  if (!d || typeof d !== 'object') return '';
+  if (typeof d.output_text === 'string' && d.output_text) return d.output_text;
+  let out = '';
+  const steps = Array.isArray(d.steps) ? d.steps : Array.isArray(d.outputs) ? d.outputs : [];
+  for (const s of steps) {
+    if (!s || typeof s !== 'object') continue;
+    if (s.type === 'model_output' && Array.isArray(s.content)) {
+      for (const c of s.content) if (c && c.type === 'text' && typeof c.text === 'string') out += c.text;
+    } else if (s.type === 'text' && typeof s.text === 'string') {
+      out += s.text;
+    }
+  }
+  return out;
+}
+async function viaInteractions(model, p, signal, safe) {
+  const input = [{ type: 'text', text: p.prompt }];
+  if (p.image) input.push({ type: 'image', data: p.image, mime_type: 'image/jpeg' });
+  const body = { model, input };
+  if (!safe) {
+    body.store = false;
+    body.generation_config = { thinking_level: 'low' };
+    if (p.schema) body.response_format = { type: 'text', mime_type: 'application/json', schema: p.schema };
+  }
+  const d = await postJSON('interactions', body, signal);
+  const st = d && d.status;
+  if (st === 'failed' || st === 'cancelled') {
+    const em = JSON.stringify((d && d.errors) || '').slice(0, 240);
+    throw { code: /safety|block|prohibit|policy/i.test(em) ? 'refused' : 'overloaded', msg: em };
+  }
+  return interactionText(d);
+}
+async function viaGenerate(model, p, signal) {
+  const parts = [{ text: p.prompt }];
+  if (p.image) parts.push({ inline_data: { mime_type: 'image/jpeg', data: p.image } });
+  const cfg = { temperature: 0.2 };
+  if (p.schema) cfg.responseMimeType = 'application/json';
+  const d = await postJSON('models/' + encodeURIComponent(model) + ':generateContent', { contents: [{ role: 'user', parts }], generationConfig: cfg }, signal);
+  if (d && d.promptFeedback && d.promptFeedback.blockReason) throw { code: 'refused', msg: String(d.promptFeedback.blockReason) };
+  const c = d && d.candidates && d.candidates[0];
+  const parts2 = (c && c.content && c.content.parts) || [];
+  const text = parts2.filter(x => x && !x.thought && typeof x.text === 'string').map(x => x.text).join('');
+  if (!text && c && /SAFETY|PROHIBITED|BLOCKLIST|SPII/.test(String(c.finishReason || ''))) throw { code: 'refused', msg: String(c.finishReason) };
+  return text;
+}
+// One model: Interactions API first; if it rejects the request shape, retry plainly, then fall back to generateContent.
+async function callModel(model, p, signal) {
+  if (S.legacy) return viaGenerate(model, p, signal);
+  let err;
+  try { return await viaInteractions(model, p, signal, false); } catch (e) { err = e; }
+  if (err.code === 'bad_request') { try { return await viaInteractions(model, p, signal, true); } catch (e) { err = e; } }
+  if (err.code !== 'not_found' && err.code !== 'bad_request') throw err;
+  const text = await viaGenerate(model, p, signal);
+  S.legacy = true;
+  return text;
+}
+// Walk the model list. Quota (429) or missing models move to the next one, since free-tier limits are per model.
+async function withModels(signal, fn) {
+  const errs = [];
+  for (const m of modelChain()) {
+    const until = S.skip.get(m);
+    if (until && until > Date.now()) {
+      errs.push(until === Infinity ? { code: 'not_found', model: m } : { code: 'rate_limited', model: m, retryAfter: Math.ceil((until - Date.now()) / 1000) });
+      continue;
+    }
+    try {
+      const out = await fn(m);
+      if (out != null) { if (S.ai.lastUsed !== m) { S.ai.lastUsed = m; saveAI(); } return out; }
+      errs.push({ code: 'invalid_json', model: m });
+    } catch (e) {
+      if ((signal && signal.aborted) || (e && e.code === 'cancelled')) throw { code: 'cancelled' };
+      const err = e && e.code ? e : { code: 'http', msg: String((e && e.message) || e) };
+      err.model = m;
+      errs.push(err);
+      if (err.code === 'not_found') S.skip.set(m, Infinity);
+      else if (err.code === 'rate_limited') S.skip.set(m, Date.now() + Math.max(15, err.retryAfter || 60) * 1000);
+      else if (err.code !== 'overloaded' && err.code !== 'empty_completion') throw err;
+    }
+  }
+  const rank = ['rate_limited', 'overloaded', 'invalid_json', 'empty_completion', 'not_found'];
+  const ri = e => { const i = rank.indexOf(e.code); return i < 0 ? 99 : i; };
+  errs.sort((a, b) => ri(a) - ri(b) || (a.retryAfter || 1e9) - (b.retryAfter || 1e9));
+  throw errs[0] || { code: 'http' };
+}
+async function analyze(r, signal) {
+  if (!S.ai.key) throw { code: 'no_key' };
+  const image = r.source === 'photo' ? await blobToB64(r.blob) : null;
+  return withModels(signal, async m => {
+    for (let a = 0; a < 2; a++) {
+      const text = await callModel(m, { prompt: buildPrompt(r, a > 0), image, schema: RESULT_SCHEMA }, signal);
+      const raw = tolerantParse(text), out = raw == null ? null : normalizeResult(raw);
+      if (out) return out;
+      if (signal.aborted) throw { code: 'cancelled' };
+    }
+    return null;
+  });
+}
+async function testAI() {
+  if (!S.ai.key) return;
+  if (S.aiTest && S.aiTest.ctl) S.aiTest.ctl.abort();
+  const ctl = new AbortController();
+  S.aiTest = { state: 'busy', ctl };
+  refreshAITest();
+  try {
+    const m = await withModels(ctl.signal, async model => {
+      const text = await callModel(model, { prompt: 'Health check. Reply with exactly this JSON and nothing else: {"ok":true}' }, ctl.signal);
+      return /ok/i.test(text || '') ? model : null;
+    });
+    S.aiTest = { state: 'ok', model: m };
+  } catch (e) {
+    if (e && e.code === 'cancelled') return;
+    S.aiTest = { state: 'bad', err: e };
+  }
+  refreshAITest();
+}
+
+function errInfo(e) {
+  const c = e && e.code;
+  const wait = e && e.retryAfter ? 'Yaklaşık ' + (e.retryAfter < 90 ? e.retryAfter + ' saniye' : Math.ceil(e.retryAfter / 60) + ' dakika') + ' sonra tekrar dene.' : 'Bir dakika bekleyip tekrar dene. Günlük limit dolduysa Türkiye saatiyle sabah 10–11 civarında sıfırlanır.';
+  const M = {
+    no_key: ['Gemini anahtarı gerekli', 'Fotoğraf analizi Google’ın ücretsiz Gemini API’siyle çalışır. Anahtarını bir kez ekle, bu fotoğraf hemen analiz edilsin.', false],
+    bad_key: ['Anahtar geçersiz', 'Gemini bu anahtarı kabul etmedi. Kopyalarken eksik kalmış olabilir; doğru anahtarı yapıştır.', false],
+    forbidden: ['Anahtar yetkili değil', 'Bu anahtarla Gemini API kullanılamıyor. Google AI Studio’dan yeni bir anahtar oluşturup dene.', false],
+    region: ['Bölge desteklenmiyor', 'Gemini API bulunduğun konumdan kullanılamıyor görünüyor. VPN açıksa kapatıp tekrar dene.', true],
+    offline: ['İnternet bağlantısı yok', 'Analiz için internet gerekiyor. Bağlantı gelince tekrar dene ya da değerleri elle gir.', true],
+    network: ['Gemini’ye ulaşılamadı', 'Bağlantı kurulamadı. İnternetini kontrol edip tekrar dene.', true],
+    timeout: ['Cevap gecikti', 'Gemini 60 saniyede cevap vermedi. Tekrar dene.', true],
+    rate_limited: ['Ücretsiz limit doldu', 'Ücretsiz katmanın dakikalık ya da günlük istek sınırına ulaşıldı. ' + wait, true],
+    overloaded: ['Gemini şu an yoğun', 'Google tarafında geçici bir sorun var. Birazdan tekrar dene.', true],
+    not_found: ['Model bulunamadı', 'Seçili model artık sunulmuyor olabilir. Ayarlar’da model seçimini “Otomatik” yap.', false],
+    bad_request: ['İstek kabul edilmedi', 'Gemini bu isteği işleyemedi. Başka bir fotoğraf dene ya da Ayarlar’da modeli “Otomatik” yap.', true],
+    image_rejected: ['Fotoğraf okunamadı', 'Bu fotoğraf işlenemedi. Başka bir fotoğraf dene.', false],
+    refused: ['Analiz edilemedi', 'Gemini bu içeriği analiz etmedi. Başka bir fotoğraf dene ya da elle ekle.', false],
+    invalid_json: ['Cevap anlaşılamadı', 'Gemini’nin cevabı okunamadı. Tekrar dene ya da elle ekle.', true],
+    empty_completion: ['Cevap gelmedi', 'Gemini boş cevap döndü. Tekrar dene ya da elle ekle.', true]
+  };
+  const v = M[c] || ['Analiz tamamlanamadı', 'Beklenmeyen bir sorun oldu. Tekrar dene ya da elle ekle.', true];
+  const tech = e && (e.status || e.msg) ? [e.status ? 'HTTP ' + e.status : '', e.model || '', e.msg || ''].filter(Boolean).join(' · ').slice(0, 200) : '';
+  return { title: v[0], text: v[1], retry: v[2], photo: c === 'image_rejected' || c === 'refused', key: c === 'no_key' || c === 'bad_key' || c === 'forbidden', settings: c === 'not_found', tech };
+}
+
+/* ---------------- analysis sheet ---------------- */
+function newSession(o) {
+  return {
+    id: newId(), source: o.source, blob: o.blob || null, preview: o.preview || null, thumb: o.thumb || null, text: o.text || '', hint: '',
+    day: o.day || (S.tab === 'today' ? S.viewDay : todayKey()), type: o.type || typeForHour(new Date().getHours()),
+    items: o.items || [], notes: '', state: o.items ? 'ready' : 'loading', err: null, ctl: null, saving: false, closed: false, timers: [], msg: '', keyDraft: ''
+  };
+}
+function clearMsgTimers(r) { for (const t of r.timers) clearTimeout(t); r.timers = []; }
+function setMsg(sh, m) { sh.ctx.msg = m; const el = $('#res-msg', sh.el); if (el) el.textContent = m; }
+function openResult(sess) {
+  const old = findSheet('result');
+  if (old) closeSheet(old);
+  const sh = openSheet('result', sess, renderResult);
+  sh.onClose = () => {
+    sess.closed = true;
+    if (sess.ctl) sess.ctl.abort();
+    clearMsgTimers(sess);
+    if (sess.preview) setTimeout(() => URL.revokeObjectURL(sess.preview), 800);
+  };
+  return sh;
+}
+async function runAnalysis(sh) {
+  const r = sh.ctx;
+  if (r.ctl) r.ctl.abort();
+  clearMsgTimers(r);
+  r.state = 'loading'; r.err = null;
+  const photoMode = r.source === 'photo';
+  r.msg = photoMode ? 'Tabak inceleniyor…' : 'Tarifin okunuyor…';
+  paint(sh);
+  r.timers.push(setTimeout(() => setMsg(sh, photoMode ? 'Porsiyonlar tahmin ediliyor…' : 'Besin değerleri hesaplanıyor…'), 6000));
+  r.timers.push(setTimeout(() => setMsg(sh, 'Hâlâ çalışıyor, birkaç saniye daha…'), 20000));
+  const fail = code => { if (r.closed) return; clearMsgTimers(r); r.state = 'error'; r.err = { code }; paint(sh); };
+  if (!S.ai.key) return fail('no_key');
+  if (navigator.onLine === false) return fail('offline');
+  const ctl = new AbortController();
+  r.ctl = ctl;
+  try {
+    const res = await analyze(r, ctl.signal);
+    if (r.closed || ctl.signal.aborted) return;
+    r.items = res.items; r.notes = res.notes;
+    r.state = res.items.length ? 'ready' : 'empty';
+  } catch (e) {
+    if (r.closed || (e && e.code === 'cancelled')) return;
+    r.state = 'error'; r.err = e && e.code ? e : { code: 'http', msg: String((e && e.message) || e) };
+  }
+  clearMsgTimers(r);
+  paint(sh);
+}
+const confTag = c => (c == null ? '' : c >= 0.75 ? '<span class="conf hi">Emin</span>' : c >= 0.45 ? '<span class="conf mid">Tahmini</span>' : '<span class="conf lo">Belirsiz</span>');
+function keyFieldHTML(id, value) {
+  return '<div class="key-row"><input class="input" id="' + id + '" type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="AIza…" value="' + esc(value) + '" aria-label="Gemini API anahtarı">' +
+    '<button class="btn ghost sq" data-act="key-eye" data-for="' + id + '" aria-label="Anahtarı göster">' + ic('eye') + '</button></div>';
+}
+const KEY_URL = 'https://aistudio.google.com/apikey';
+function renderResult(sh) {
+  const r = sh.ctx;
+  const title = r.source === 'photo' ? 'Fotoğraf analizi' : r.source === 'text' ? 'Tarif ettiğin öğün' : 'Yeni kayıt';
+  let h = sheetHead(title, r.day !== todayKey() ? 'Kayıt tarihi: ' + longDate(r.day) : '');
+  const ready = r.state === 'ready';
+  h += '<div class="sheet-body' + (ready ? ' has-foot' : '') + '">';
+  if (r.preview) h += '<div class="res-photo' + (r.state === 'loading' ? ' scanning' : ' small') + '"><img src="' + r.preview + '" alt="Seçtiğin yemek fotoğrafı"><div class="scan" aria-hidden="true"></div></div>';
+  if (r.source === 'text' && r.state !== 'error') h += '<blockquote class="res-quote">' + esc(r.text) + '</blockquote>';
+  if (r.state === 'loading') {
+    h += '<div class="res-status" role="status"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span id="res-msg">' + esc(r.msg) + '</span></div>' +
+      '<p class="fine">Analiz genelde 5–20 saniye sürer.</p>' +
+      '<button class="btn ghost block" data-act="close-sheet">İptal</button>';
+  } else if (r.state === 'error') {
+    const info = errInfo(r.err);
+    h += '<div class="res-error" role="alert"><p class="t">' + esc(info.title) + '</p><p>' + esc(info.text) + '</p></div>';
+    if (info.key) {
+      // Let the key be fixed right here, so the photo is not lost.
+      h += '<div class="res-key"><div class="field"><label for="res-key">Gemini API anahtarı</label>' + keyFieldHTML('res-key', r.keyDraft) + '</div>' +
+        '<p class="fine">Anahtarın yok mu? <a href="' + KEY_URL + '" target="_blank" rel="noopener">aistudio.google.com/apikey</a> adresinde Google hesabınla ücretsiz oluştur, kopyala ve buraya yapıştır.</p>' +
+        '<p class="form-err" id="res-key-err" role="alert"></p>' +
+        '<button class="btn primary block" data-act="res-key">' + ic('key') + 'Kaydet ve analiz et</button>' +
+        '<button class="btn ghost block" data-act="res-manual">' + ic('pen') + 'Değerleri kendim gireyim</button></div>';
+    } else {
+      h += '<div class="row2">' +
+        (info.photo
+          ? '<label class="btn ghost" for="in-cam" tabindex="0" ' + presetAttrs(r.type, r.day) + '>' + ic('camera') + 'Yeni fotoğraf</label>'
+          : info.settings ? '<button class="btn ghost" data-act="go-ai">Ayarlar</button>'
+            : info.retry ? '<button class="btn ghost" data-act="res-retry">Tekrar dene</button>' : '<button class="btn ghost" data-act="close-sheet">Kapat</button>') +
+        '<button class="btn primary" data-act="res-manual">' + ic('pen') + 'Elle ekle</button></div>';
+    }
+    if (info.tech) h += '<p class="tech">' + esc(info.tech) + '</p>';
+  } else if (r.state === 'empty') {
+    h += '<div class="res-error" role="alert"><p class="t">' + (r.source === 'photo' ? 'Bu fotoğrafta yemek bulamadım' : 'Bu tarifte yemek bulamadım') + '</p><p>' +
+      esc(r.notes || 'Tabağın tamamı görünecek şekilde, yukarıdan çekmeyi dene.') + '</p></div><div class="row2">' +
+      (r.source === 'photo' ? '<label class="btn ghost" for="in-cam" tabindex="0" ' + presetAttrs(r.type, r.day) + '>' + ic('camera') + 'Tekrar çek</label>' : '<button class="btn ghost" data-act="close-sheet">Kapat</button>') +
+      '<button class="btn primary" data-act="res-manual">' + ic('pen') + 'Elle ekle</button></div>';
+  } else {
+    const n = r.items.length;
+    h += '<div class="res-head"><h3>' + (n ? n + ' kalem' + (r.source === 'manual' ? '' : ' bulundu') : 'Kalem kalmadı') + '</h3><p>' +
+      (n ? 'Adına dokunarak düzelt, gramajı kaydırarak değiştir. Değerler buna göre güncellenir.' : 'Aşağıdan kalem ekleyebilirsin.') + '</p></div>';
+    h += '<ul class="res-items">' + r.items.map((it, i) =>
+      '<li class="res-item"><div class="ri-top"><input class="ri-name" id="rn-' + i + '" data-f="name" data-i="' + i + '" value="' + esc(it.name) + '" maxlength="80" aria-label="Yemek adı" autocomplete="off">' +
+      confTag(it.conf) + '<button class="icon-btn ghost" data-act="res-del" data-i="' + i + '" aria-label="' + esc(it.name) + ' kalemini sil">' + ic('x') + '</button></div>' +
+      gramEditor('r', it, i) + '</li>').join('') + '</ul>';
+    h += '<button class="btn ghost block" data-act="res-add">' + ic('plus') + 'Kalem ekle</button>';
+    if (r.notes) h += '<p class="note"><b>Not</b>' + esc(r.notes) + '</p>';
+    if (r.source === 'photo') {
+      h += '<details class="hint"><summary>Yanlış mı tanındı? Not ekleyip yeniden analiz et</summary>' +
+        '<textarea id="res-hint" class="input" rows="2" placeholder="ör. yarım porsiyon, yağsız pişti, içecek şekersiz">' + esc(r.hint) + '</textarea>' +
+        '<button class="btn ghost block" data-act="res-reanalyze">Notla yeniden analiz et</button></details>';
+    }
+    h += '<div class="sheet-foot"><div class="tot" id="res-tot">' + totHTML(sumItems(r.items)) + '</div>' +
+      '<div class="seg" role="group" aria-label="Öğün türü">' + TYPES.map(T => '<button data-act="res-type" data-v="' + T.k + '" aria-pressed="' + (T.k === r.type) + '">' + T.label + '</button>').join('') + '</div>' +
+      '<button class="btn primary block" data-act="res-commit"' + (r.saving || !n ? ' disabled' : '') + '>' + (r.saving ? 'Kaydediliyor…' : 'Öğüne Ekle') + '</button></div>';
+  }
+  h += '</div>';
+  return h;
+}
+async function commitResult(sh) {
+  const r = sh.ctx;
+  if (r.saving || !r.items.length) return;
+  r.saving = true;
+  paint(sh);
+  const entry = cleanEntry({ id: r.id, day: r.day, ts: Date.now(), type: r.type, items: r.items, notes: r.notes, hasPhoto: !!r.thumb, source: r.source });
+  try {
+    await saveEntry(entry, r.thumb);
+    closeSheet(sh);
+    toast(typeOf(r.type).added);
+  } catch (e) {
+    r.saving = false;
+    if (!r.closed) paint(sh);
+    toast(dbErrText(e));
+  }
+}
+async function onPhoto(ev) {
+  const input = ev.target;
+  const file = input.files && input.files[0];
+  const preset = S.pending || {};
+  S.pending = null;
+  input.value = '';
+  if (!file) return;
+  if (file.type && !/^image\//.test(file.type)) { toast('Lütfen bir fotoğraf seç.'); return; }
+  let blob, thumb;
+  try {
+    const img = await loadImage(file);
+    blob = await toBlob(scaleCanvas(img, 1024), 0.8);
+    thumb = scaleCanvas(img, 360).toDataURL('image/jpeg', 0.72);
+  } catch (e) { toast('Bu fotoğraf açılamadı. Başka bir fotoğraf dene.'); return; }
+  const sh = openResult(newSession({ source: 'photo', blob, thumb, preview: URL.createObjectURL(blob), day: preset.day, type: preset.type }));
+  runAnalysis(sh);
+}
+
+/* ---------------- manual add ---------------- */
+function openManual(ctx) { return openSheet('manual', Object.assign({ text: '' }, ctx), renderManual); }
+function renderManual(sh) {
+  const c = sh.ctx;
+  return sheetHead('Elle ekle', c.day && c.day !== todayKey() ? 'Kayıt tarihi: ' + longDate(c.day) : '') + '<div class="sheet-body">' +
+    '<div class="field"><label class="flabel" for="man-text">Ne yedin?</label><textarea id="man-text" class="input" rows="3" placeholder="ör. 1 kase mercimek çorbası, 2 dilim tam buğday ekmeği, 1 bardak ayran">' + esc(c.text) + '</textarea></div>' +
+    '<button class="btn primary block" data-act="man-ai">Yapay zekâ ile hesapla</button>' +
+    '<p class="fine">Gemini yazdıklarından porsiyonu ve besin değerlerini tahmin eder, sonra düzeltebilirsin.</p>' +
+    '<div class="or"><span>ya da değerleri kendin gir</span></div>' + itemFields('mi') +
+    '<p class="form-err" id="mi-err" role="alert"></p><button class="btn ghost block" data-act="man-values">Devam et</button></div>';
+}
+
+/* ---------------- meal detail ---------------- */
+function openMeal(day, type) { return openSheet('meal', { day, type, open: null, confirm: null }, renderMeal); }
+function renderMeal(sh) {
+  const c = sh.ctx, T = typeOf(c.type);
+  const list = groupDay(c.day)[c.type];
+  const tot = sumEntries(list);
+  let h = sheetHead(T.label, dayName(c.day) + ' · ' + (list.length ? list.length + ' kayıt' : 'kayıt yok')) + '<div class="sheet-body">';
+  if (!list.length) h += '<p class="muted">Bu öğünde kayıt kalmadı.</p>';
+  else {
+    h += '<div class="m-sum"><div class="m-kcal"><b class="num" data-mt="calories">' + fk(tot.calories) + '</b><span>kcal</span></div><div class="m-macs">' +
+      MAC.map(m => '<div class="m-mac"><span class="dot" style="background:' + m.c + '"></span><span>' + m.label + '</span><b class="num" data-mt="' + m.k + '">' + fg(tot[m.k]) + ' g</b></div>').join('') + '</div></div>';
+    for (const e of list) h += entryHTML(sh, e);
+  }
+  h += '<div class="m-add"><label for="in-cam" class="btn primary" tabindex="0" ' + presetAttrs(c.type, c.day) + '>' + ic('camera') + 'Bu öğüne fotoğraf ekle</label>' +
+    '<label for="in-gal" class="btn ghost sq" tabindex="0" ' + presetAttrs(c.type, c.day) + ' aria-label="Galeriden seç">' + ic('image') + '</label></div></div>';
+  return h;
+}
+function entryHTML(sh, e) {
+  const t = sumItems(e.items);
+  const src = { photo: 'Fotoğraf', text: 'Tarif', manual: 'Elle' }[e.source] || '';
+  const confirming = sh.ctx.confirm === e.id;
+  return '<article class="entry">' +
+    (e.hasPhoto ? '<div class="thumb entry-photo"><img data-photo="' + e.id + '" alt="Öğün fotoğrafı"></div>' : '') +
+    '<div class="entry-meta"><span>' + timeOf(e.ts) + ' · ' + src + '</span><b class="num" data-et="' + e.id + '">' + fk(t.calories) + ' kcal</b></div>' +
+    '<ul class="eitems">' + (e.items.length ? e.items.map((it, i) => eitemHTML(sh, e, it, i)).join('') : '<li class="eitem-none">Kalem yok</li>') + '</ul>' +
+    (e.notes ? '<p class="note"><b>Not</b>' + esc(e.notes) + '</p>' : '') +
+    '<div class="entry-type"><span>Öğün</span><div class="seg" role="group" aria-label="Öğün türü">' + TYPES.map(T => '<button data-act="m-type" data-e="' + e.id + '" data-v="' + T.k + '" aria-pressed="' + (T.k === e.type) + '">' + T.label + '</button>').join('') + '</div></div>' +
+    '<div class="entry-actions"><button class="btn ghost" data-act="m-additem" data-e="' + e.id + '">' + ic('plus') + 'Kalem ekle</button>' +
+    '<button class="btn ' + (confirming ? 'danger-solid' : 'danger') + '" data-act="m-del" data-e="' + e.id + '">' + ic('trash') + (confirming ? 'Silmeyi onayla' : 'Kaydı sil') + '</button></div></article>';
+}
+function eitemHTML(sh, e, it, i) {
+  const open = sh.ctx.open === e.id + ':' + i;
+  return '<li class="eitem' + (open ? ' open' : '') + '">' +
+    '<button class="eitem-row" data-act="m-toggle" data-e="' + e.id + '" data-i="' + i + '" aria-expanded="' + open + '"><span class="nm">' + esc(it.name) + '</span><span class="g num">' + fk(it.grams) + ' g</span><span class="k num">' + fk(itemVals(it).calories) + '</span></button>' +
+    (open ? '<div class="eitem-ed"><input class="input" data-f="name" data-e="' + e.id + '" data-i="' + i + '" id="mn-' + e.id + '-' + i + '" value="' + esc(it.name) + '" maxlength="80" aria-label="Yemek adı" autocomplete="off">' +
+      gramEditor('m-' + e.id, it, i, e.id) + '<button class="btn danger block" data-act="m-delitem" data-e="' + e.id + '" data-i="' + i + '">' + ic('trash') + 'Kalemi sil</button></div>' : '') +
+    '</li>';
+}
+function refreshMealTotals(sh) {
+  const list = groupDay(sh.ctx.day)[sh.ctx.type];
+  const tot = sumEntries(list);
+  for (const el of $$('[data-mt]', sh.el)) { const k = el.dataset.mt; el.textContent = k === 'calories' ? fk(tot[k]) : fg(tot[k]) + ' g'; }
+  for (const e of list) { const el = $('[data-et="' + e.id + '"]', sh.el); if (el) el.textContent = fk(sumItems(e.items).calories) + ' kcal'; }
+}
+function onSheetInput(sh, ev) {
+  const t = ev.target;
+  if (sh.id === 'manual' && t.id === 'man-text') { sh.ctx.text = t.value; return; }
+  if (sh.id === 'result' && t.id === 'res-hint') { sh.ctx.hint = t.value; return; }
+  if (sh.id === 'result' && t.id === 'res-key') { sh.ctx.keyDraft = t.value; return; }
+  const f = t.dataset.f;
+  if (!f) return;
+  const i = Number(t.dataset.i);
+  if (sh.id === 'result') {
+    const it = sh.ctx.items[i];
+    if (!it) return;
+    applyEdit(t, it);
+    if (f !== 'name') { const tot = $('#res-tot', sh.el); if (tot) tot.innerHTML = totHTML(sumItems(sh.ctx.items)); }
+  } else if (sh.id === 'meal') {
+    const e = S.entries.get(t.dataset.e), it = e && e.items[i];
+    if (!it) return;
+    applyEdit(t, it);
+    touchEntry(e.id);
+    const li = t.closest('.eitem');
+    if (f === 'name') $('.nm', li).textContent = it.name || 'Yemek';
+    else { $('.g', li).textContent = fk(it.grams) + ' g'; $('.k', li).textContent = fk(itemVals(it).calories); refreshMealTotals(sh); }
+  }
+}
+
+/* ---------------- history ---------------- */
+function dayMap() {
+  const m = new Map();
+  for (const e of S.entries.values()) {
+    const v = sumItems(e.items), cur = m.get(e.day) || zero();
+    for (const k of NUT) cur[k] += v[k];
+    m.set(e.day, cur);
+  }
+  return m;
+}
+function buildSeries(range, dm) {
+  const t = todayKey(), out = [];
+  const avgOf = days => { const lg = days.filter(k => dm.has(k)); return { value: lg.length ? lg.reduce((a, k) => a + dm.get(k).calories, 0) / lg.length : 0, logged: lg.length }; };
+  if (range === 'day') {
+    for (let i = 13; i >= 0; i--) {
+      const k = addDays(t, -i), d = parseDay(k), v = dm.get(k);
+      out.push({ label: String(d.getDate()), title: dayName(k), days: [k], value: v ? v.calories : 0, logged: v ? 1 : 0 });
+    }
+  } else if (range === 'week') {
+    const mon = addDays(t, -((parseDay(t).getDay() + 6) % 7));
+    for (let i = 11; i >= 0; i--) {
+      const s = addDays(mon, -7 * i), days = [];
+      for (let j = 0; j < 7; j++) { const k = addDays(s, j); if (k <= t) days.push(k); }
+      const sd = parseDay(s), ed = parseDay(addDays(s, 6)), a = avgOf(days);
+      out.push({ label: sd.getDate() + '.' + (sd.getMonth() + 1), title: sd.getDate() + ' ' + MO[sd.getMonth()] + ' – ' + ed.getDate() + ' ' + MO[ed.getMonth()] + ' haftası', days, value: a.value, logged: a.logged });
+    }
+  } else {
+    const td = parseDay(t);
+    for (let i = 5; i >= 0; i--) {
+      const m = new Date(td.getFullYear(), td.getMonth() - i, 1), days = [], d = new Date(m);
+      while (d.getMonth() === m.getMonth()) { const k = dayKey(d); if (k > t) break; days.push(k); d.setDate(d.getDate() + 1); }
+      const a = avgOf(days);
+      out.push({ label: MO[m.getMonth()], title: MO_LONG[m.getMonth()] + ' ' + m.getFullYear(), days, value: a.value, logged: a.logged });
+    }
+  }
+  return out;
+}
+function barPath(x, y, w, h, r) {
+  r = Math.min(r, w / 2, h);
+  return 'M' + x + ',' + (y + h) + 'V' + (y + r) + 'Q' + x + ',' + y + ' ' + (x + r) + ',' + y + 'H' + (x + w - r) + 'Q' + (x + w) + ',' + y + ' ' + (x + w) + ',' + (y + r) + 'V' + (y + h) + 'Z';
+}
+function chartSVG(ser, goal, sel) {
+  const W = 360, H = 210, L = 38, R = 6, T = 14, B = 24, pw = W - L - R, ph = H - T - B;
+  const maxV = Math.max(goal, ...ser.map(s => s.value));
+  let step = 500, top = Math.max(1000, Math.ceil(maxV * 1.12 / step) * step);
+  if (top > 3000) { step = 1000; top = Math.ceil(maxV * 1.12 / step) * step; }
+  const y = v => T + ph * (1 - v / top);
+  const n = ser.length, band = pw / n, bw = Math.min(30, band * 0.62);
+  let g = '';
+  for (let v = 0; v <= top + 0.1; v += step) g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v).toFixed(1) + '" y2="' + y(v).toFixed(1) + '" class="grid"/><text x="' + (L - 7) + '" y="' + (y(v) + 3.5).toFixed(1) + '" class="ax" text-anchor="end">' + fk(v) + '</text>';
+  ser.forEach((s, i) => {
+    const x0 = L + band * i, cx = x0 + band / 2;
+    const hgt = s.logged ? Math.max(3, ph * s.value / top) : 0;
+    const cls = 'bar' + (s.value > goal * 1.05 ? ' over' : '') + (i === sel ? ' sel' : '');
+    g += '<g class="' + cls + '" data-act="hist-sel" data-i="' + i + '" role="button" aria-label="' + esc(s.title) + '"><rect x="' + x0.toFixed(1) + '" y="' + T + '" width="' + band.toFixed(1) + '" height="' + (ph + B) + '" fill="transparent"/>' +
+      (s.logged ? '<path class="b" d="' + barPath(+(cx - bw / 2).toFixed(1), +(T + ph - hgt).toFixed(1), +bw.toFixed(1), +hgt.toFixed(1), 6) + '" style="animation-delay:' + i * 22 + 'ms"/>'
+        : '<rect class="b0" x="' + (cx - bw / 2).toFixed(1) + '" y="' + (T + ph - 2) + '" width="' + bw.toFixed(1) + '" height="2" rx="1"/>') +
+      '<text x="' + cx.toFixed(1) + '" y="' + (H - 6) + '" class="ax' + (i === sel ? ' on' : '') + '" text-anchor="middle">' + esc(s.label) + '</text></g>';
+  });
+  const gy = y(goal).toFixed(1);
+  g += '<line class="goal" x1="' + L + '" x2="' + (W - R) + '" y1="' + gy + '" y2="' + gy + '"/><text class="ax goal-t" x="' + (W - R) + '" y="' + (gy - 5) + '" text-anchor="end">Hedef ' + fk(goal) + '</text>';
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Kalori grafiği">' + g + '</svg>';
+}
+function renderHistory() {
+  const el = $('#v-history'), r = S.histRange, G = S.settings.goal, dm = dayMap();
+  const ser = buildSeries(r, dm);
+  let sel = S.histSel;
+  if (sel == null || sel >= ser.length) sel = ser.length - 1;
+  const rangeDays = Array.from(new Set(ser.flatMap(s => s.days)));
+  const lg = rangeDays.filter(k => dm.has(k));
+  const agg = zero();
+  for (const k of lg) { const v = dm.get(k); for (const n of NUT) agg[n] += v[n]; }
+  const nd = lg.length || 1;
+  const s = ser[sel];
+  let h = '<header class="page-head"><p class="eyebrow">Geçmiş</p><h1>Kalori ve makrolar</h1></header>' +
+    '<div class="seg" role="group" aria-label="Aralık">' + [['day', 'Günlük'], ['week', 'Haftalık'], ['month', 'Aylık']].map(o => '<button data-act="hist-range" data-v="' + o[0] + '" aria-pressed="' + (o[0] === r) + '">' + o[1] + '</button>').join('') + '</div>' +
+    '<section class="h-sum"><div><p class="eyebrow">' + { day: 'Son 14 gün', week: 'Son 12 hafta', month: 'Son 6 ay' }[r] + ' · günlük ortalama</p><p class="big num" style="margin-top:6px">' + (lg.length ? fk(agg.calories / nd) : '–') + '<small>kcal</small></p></div>' +
+    '<div class="h-sum-r"><p class="num">' + lg.length + ' gün kayıtlı</p><p class="num">Hedef ' + fk(G.kcal) + ' kcal</p></div></section>' +
+    '<div class="h-sel" aria-live="polite"><span>' + esc(s.title) + '</span><b class="num">' + (s.logged ? fk(s.value) + ' kcal' + (r === 'day' ? '' : '/gün') : 'Kayıt yok') + '</b>' +
+    (s.logged && r !== 'day' ? '<span class="num">' + s.logged + ' gün</span>' : '') + (s.logged ? '<span class="num">hedefe göre %' + Math.round(s.value / G.kcal * 100) + '</span>' : '') + '</div>' +
+    '<div class="chart' + (S.histAnim ? ' anim' : '') + '">' + chartSVG(ser, G.kcal, sel) + '</div>';
+  S.histAnim = false;
+  const pk = agg.protein_g * 4, ck = agg.carbs_g * 4, fk9 = agg.fat_g * 9, sum = pk + ck + fk9;
+  h += '<section><div class="sec-head"><h2>Makro dağılımı</h2><span class="fine">kalorideki payı</span></div>';
+  if (sum > 0) {
+    h += '<div class="dist" role="img" aria-label="Protein yüzde ' + Math.round(pk / sum * 100) + ', karbonhidrat yüzde ' + Math.round(ck / sum * 100) + ', yağ yüzde ' + Math.round(fk9 / sum * 100) + '">' +
+      [[pk, MAC[0].c], [ck, MAC[1].c], [fk9, MAC[2].c]].map(o => '<i style="flex:' + o[0].toFixed(1) + ' 1 0;background:' + o[1] + '"></i>').join('') + '</div>' +
+      '<ul class="dist-leg">' + [[MAC[0], pk], [MAC[1], ck], [MAC[2], fk9]].map(o => '<li><span class="dot" style="background:' + o[0].c + '"></span><span>' + o[0].label + '</span><b class="num">%' + Math.round(o[1] / sum * 100) + '</b><span class="g num">' + fg(agg[o[0].k] / nd) + ' g/gün</span></li>').join('') + '</ul>' +
+      '<p class="dist-minor num">Lif ' + fg(agg.fiber_g / nd) + ' g/gün · Şeker ' + fg(agg.sugar_g / nd) + ' g/gün</p>';
+  } else h += '<p class="muted">Bu aralıkta kayıt yok. Öğün ekledikçe dağılım burada görünür.</p>';
+  h += '</section>';
+  const days = Array.from(dm.keys()).sort().reverse().slice(0, 21);
+  h += '<section><div class="sec-head"><h2>Günler</h2></div>' + (days.length
+    ? '<ul class="day-list">' + days.map(k => { const v = dm.get(k), p = Math.min(1, v.calories / G.kcal); return '<li><button class="day-row" data-act="hist-day" data-k="' + k + '"><span>' + esc(dayName(k)) + '</span><span class="db"><i class="' + (v.calories > G.kcal * 1.05 ? 'over' : '') + '" style="width:' + (p * 100).toFixed(1) + '%"></i></span><b class="num">' + fk(v.calories) + '</b></button></li>'; }).join('') + '</ul>'
+    : '<p class="muted">Henüz kayıt yok.</p>') + '</section>';
+  el.innerHTML = h;
+}
+
+/* ---------------- settings ---------------- */
+function segRow(label, k, opts, cur, act) {
+  return '<div class="seg-row"><span>' + label + '</span><div class="seg" role="group" aria-label="' + label + '">' +
+    opts.map(o => '<button data-act="' + (act || 'prof') + '" data-k="' + k + '" data-v="' + o[0] + '" aria-pressed="' + (o[0] === cur) + '">' + o[1] + '</button>').join('') + '</div></div>';
+}
+function macroKcalLine() {
+  const G = S.settings.goal, m = G.protein * 4 + G.carbs * 4 + G.fat * 9;
+  const diff = Math.abs(m - G.kcal) / G.kcal;
+  return 'Makrolardan gelen kalori: ' + fk(m) + ' kcal' + (diff > 0.1 ? ' (kalori hedefinden farklı)' : '');
+}
+function recHTML() {
+  const r = recommend(S.settings.profile);
+  if (!r) return '<p class="fine">Boy, kilo, yaş ve cinsiyet girince önerilen kalori burada görünür.</p>';
+  return '<div class="rec-top"><span class="eyebrow">Önerilen</span><b class="num">' + fk(r.kcal) + '</b><span class="muted">kcal/gün</span></div>' +
+    '<p class="fine num">Bazal metabolizma ' + fk(r.bmr) + ' kcal · Günlük harcama ' + fk(r.tdee) + ' kcal' + (r.floored ? ' · Güvenli alt sınır uygulandı' : '') + '</p>' +
+    '<p class="fine num">Protein ' + r.protein + ' g · Karbonhidrat ' + r.carbs + ' g · Yağ ' + r.fat + ' g · Lif ' + r.fiber + ' g · Şeker en fazla ' + r.sugar + ' g</p>' +
+    '<button class="btn primary block" data-act="rec-apply">Bu değerleri hedef yap</button>' +
+    '<p class="fine dim">Mifflin-St Jeor formülüyle yapılan bir tahmin. Bir sağlık sorunun varsa diyetisyene danış.</p>';
+}
+function aiTestHTML() {
+  const t = S.aiTest;
+  if (!t) return S.ai.key && S.ai.lastUsed ? '<p class="fine dim">Son kullanılan model: ' + esc(S.ai.lastUsed) + '</p>' : '';
+  if (t.state === 'busy') return '<p class="t-busy"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>Gemini’ye bağlanılıyor…</p>';
+  if (t.state === 'ok') return '<p class="fine t-ok">Bağlantı çalışıyor · ' + esc(t.model) + '</p>';
+  const info = errInfo(t.err);
+  return '<p class="fine t-bad"><b>' + esc(info.title) + '.</b> ' + esc(info.text) + '</p>' + (info.tech ? '<p class="tech">' + esc(info.tech) + '</p>' : '');
+}
+function refreshAITest() { const el = $('#s-ai-test'); if (el) el.innerHTML = aiTestHTML(); }
+function aiGroupHTML() {
+  const has = !!S.ai.key;
+  let h = '<section class="group" id="s-ai"><div class="g-head"><h2>Yapay zekâ</h2>' + (has ? '<span class="pill ok">Bağlı</span>' : '<span class="pill warn">Kurulmadı</span>') + '</div>' +
+    '<p class="fine">Fotoğraf ve tarif analizi Google’ın ücretsiz Gemini API’siyle yapılır. Anahtarın yalnızca bu cihazda saklanır ve yedeğe eklenmez.</p>';
+  if (!has) {
+    h += '<ol class="steps"><li><a href="' + KEY_URL + '" target="_blank" rel="noopener">aistudio.google.com/apikey</a> adresini aç ve Google hesabınla giriş yap.</li>' +
+      '<li><b>Create API key</b> (API anahtarı oluştur) düğmesine dokun.</li><li>Oluşan anahtarı kopyala ve aşağıya yapıştır.</li></ol>';
+  }
+  h += '<div class="field"><label for="s-key">Gemini API anahtarı</label>' + keyFieldHTML('s-key', S.ai.key) + '</div>' +
+    '<div class="row2"><button class="btn primary" data-act="key-save">Kaydet</button><button class="btn ghost" data-act="ai-test"' + (has ? '' : ' disabled') + '>Bağlantıyı test et</button></div>' +
+    '<div id="s-ai-test">' + aiTestHTML() + '</div>' +
+    segRow('Model', 'model', [['auto', 'Otomatik'], ['lite', 'Hızlı'], ['custom', 'Özel']], S.ai.model, 'ai-model') +
+    '<p class="fine" style="margin-top:-6px">' + (S.ai.model === 'lite' ? 'Önce Flash-Lite: daha hızlı, porsiyon tahmini biraz daha kaba.' : S.ai.model === 'custom' ? 'Yalnızca yazdığın model kullanılır.' : 'En yeni Flash modeli kullanılır. Ücretsiz limiti dolarsa otomatik olarak Flash-Lite’a geçer.') + '</p>';
+  if (S.ai.model === 'custom') h += '<div class="field"><label for="s-custom">Model adı</label><input class="input" id="s-custom" data-ai="custom" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ör. gemini-3.8-flash" value="' + esc(S.ai.custom) + '"></div>';
+  h += '<p class="fine dim">Ücretsiz katmanda Google gönderdiğin fotoğraf ve metinleri ürünlerini geliştirmek için kullanabilir. Yüzlerin ya da kişisel bilgilerin görünmediği fotoğraflar çek.</p>';
+  if (has) h += '<button class="btn danger" data-act="key-del">' + ic('trash') + 'Anahtarı bu cihazdan sil</button>';
+  return h + '</section>';
+}
+function fmtBytes(b) { return b >= 1048576 ? NF1.format(b / 1048576) + ' MB' : NF0.format(Math.max(1, b / 1024)) + ' KB'; }
+function storageText() {
+  if (Store.kind === 'mem') return 'Bu tarayıcı veri saklamaya izin vermiyor; uygulama kapanınca kayıtlar silinir. Gizli sekmedeysen normal sekmede aç.';
+  let t = 'Kayıtların ve fotoğrafların yalnızca bu cihazda, uygulamanın kendi deposunda duruyor. Şu an ' + S.entries.size + ' kayıt var';
+  if (S.est && S.est.usage) t += ', yaklaşık ' + fmtBytes(S.est.usage) + ' yer kaplıyor';
+  t += '. ';
+  if (S.persisted === true) t += 'Tarayıcı bu verileri kalıcı olarak koruyor. ';
+  t += 'Telefonunu değiştirmeden ya da tarayıcı verilerini silmeden önce yedek al.';
+  return t;
+}
+function installHTML() {
+  if (isStandalone()) return '<p class="fine t-ok">Lokma uygulama olarak açık. Ana ekrandaki simgeden başlatabilirsin.</p>';
+  if (S.installEvt) return '<p class="fine">Lokma’yı telefonuna uygulama olarak yükle; tam ekran açılır ve internetsiz de çalışır.</p><button class="btn primary block" data-act="install">' + ic('download') + 'Uygulamayı yükle</button>';
+  if (isIOS()) return '<ol class="steps"><li>Bu sayfayı iPhone’da <b>Safari</b> ile aç.</li><li>Alttaki <b>Paylaş</b> düğmesine dokun.</li><li><b>Ana Ekrana Ekle</b>’yi seç ve <b>Ekle</b>’ye dokun.</li></ol><p class="fine dim">Ana ekrandan açılan uygulamanın kayıtları Safari’dekinden ayrı tutulur; Safari’de kayıt eklediysen önce yedeğini al.</p>';
+  return '<ol class="steps"><li>Tarayıcı menüsünü (⋮) aç.</li><li><b>Uygulamayı yükle</b> ya da <b>Ana ekrana ekle</b>’yi seç.</li></ol>';
+}
+function backupPanelHTML() {
+  const b = S.bk;
+  if (!b) return '';
+  if (b.mode === 'busy') return '<p class="t-busy"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>' + esc(b.text) + '</p>';
+  if (b.mode === 'ready') return '<div class="bk-out"><p class="fine">' + esc(b.name) + ' hazır (' + fmtBytes(b.size) + ').</p><button class="btn primary block" data-act="bk-save">' + ic('download') + 'Dosyayı kaydet</button></div>';
+  if (b.mode === 'confirm') return '<div class="bk-out"><p><b>' + b.count + ' kayıt</b> bulundu' + (b.photos ? ', ' + b.photos + ' fotoğraf' : '') + (b.data.settings ? ', hedefler de var' : '') + '. Aynı kayıtlar güncellenir, diğer kayıtların korunur.</p><div class="row2"><button class="btn ghost" data-act="bk-cancel">Vazgeç</button><button class="btn primary" data-act="bk-import">Yükle</button></div></div>';
+  if (b.mode === 'done') return '<p class="fine t-ok">' + esc(b.text) + '</p>';
+  if (b.mode === 'error') return '<p class="form-err">' + esc(b.err) + '</p>';
+  return '';
+}
+function refreshBackupPanel() { const el = $('#s-bk'); if (el) el.innerHTML = backupPanelHTML(); }
+function renderSettings() {
+  const el = $('#v-settings'), G = S.settings.goal, P = S.settings.profile;
+  const inp = (id, attr, val, label, unit, mode) => '<div class="field"><label for="' + id + '">' + label + '</label><div class="unit"><input class="input num" id="' + id + '" ' + attr + ' type="text" inputmode="' + (mode || 'numeric') + '" value="' + (val == null ? '' : val) + '" autocomplete="off"><span>' + unit + '</span></div></div>';
+  let h = '<header class="page-head"><p class="eyebrow">Ayarlar</p><h1>Hedefler ve veriler</h1></header>';
+  if (!S.ai.key) h += aiGroupHTML();
+  h += '<section class="group"><h2>Günlük hedef</h2>' + inp('s-kcal', 'data-goal="kcal"', G.kcal, 'Kalori', 'kcal') +
+    '<div class="fgrid">' + inp('s-pro', 'data-goal="protein"', G.protein, 'Protein', 'g') + inp('s-carb', 'data-goal="carbs"', G.carbs, 'Karbonhidrat', 'g') +
+    inp('s-fat', 'data-goal="fat"', G.fat, 'Yağ', 'g') + inp('s-fib', 'data-goal="fiber"', G.fiber, 'Lif', 'g') + inp('s-sug', 'data-goal="sugar"', G.sugar, 'Şeker (üst sınır)', 'g') + '</div>' +
+    '<p class="fine num" id="s-mk">' + macroKcalLine() + '</p></section>';
+  h += '<section class="group"><h2>Önerilen kalori</h2><div class="fgrid three">' + inp('s-h', 'data-prof="height"', P.height, 'Boy', 'cm') + inp('s-w', 'data-prof="weight"', P.weight, 'Kilo', 'kg', 'decimal') + inp('s-a', 'data-prof="age"', P.age, 'Yaş', 'yıl') + '</div>' +
+    segRow('Cinsiyet', 'sex', [['female', 'Kadın'], ['male', 'Erkek']], P.sex) +
+    segRow('Günlük hareket', 'activity', Object.keys(ACT).map(k => [k, ACT[k].label]), P.activity) +
+    '<p class="fine" id="s-act-d" style="margin-top:-6px">' + esc(ACT[P.activity].d) + '</p>' +
+    segRow('Hedef', 'target', [['lose', 'Kilo ver'], ['keep', 'Koru'], ['gain', 'Kilo al']], P.target) +
+    '<div class="rec" id="s-rec">' + recHTML() + '</div></section>';
+  if (S.ai.key) h += aiGroupHTML();
+  h += '<section class="group"><h2>Yedek</h2><p class="fine">Öğünlerin ve hedeflerin tek bir JSON dosyasına yazılır. claude.ai’deki eski Lokma’dan geçiyorsan orada <b>Yedeği indir</b>, burada <b>Yedeği yükle</b>.</p>' +
+    '<label class="check"><input type="checkbox" id="s-bkp"' + (S.bkPhotos ? ' checked' : '') + '>Fotoğraf önizlemelerini de ekle</label>' +
+    '<div class="row2"><button class="btn ghost" data-act="bk-down">' + ic('download') + 'Yedeği indir</button><button class="btn ghost" data-act="bk-up">' + ic('upload') + 'Yedeği yükle</button></div>' +
+    '<div id="s-bk">' + backupPanelHTML() + '</div></section>';
+  h += '<section class="group"><h2>Depolama</h2><p class="fine" id="s-store">' + esc(storageText()) + '</p>' +
+    (S.entries.size ? '<div class="danger-row"><button class="btn ' + (S.wipe ? 'danger-solid' : 'danger') + '" data-act="wipe">' + ic('trash') + (S.wipe ? 'Eminim, hepsini sil' : 'Tüm öğün kayıtlarını sil') + '</button>' +
+      (S.wipe ? '<p class="fine">' + S.entries.size + ' kayıt ve fotoğrafları kalıcı olarak silinecek. Hedeflerin ve anahtarın kalır.</p>' : '') + '</div>' : '') + '</section>';
+  h += '<section class="group"><h2>Ana ekrana ekle</h2><div id="s-inst">' + installHTML() + '</div></section>';
+  el.innerHTML = h;
+  if (navigator.storage && navigator.storage.estimate) navigator.storage.estimate().then(e => { S.est = e; const s = $('#s-store'); if (s) s.textContent = storageText(); }).catch(() => {});
+}
+function onSettingsInput(ev) {
+  const t = ev.target, k = t.dataset.goal, p = t.dataset.prof;
+  if (k) { const v = parseNum(t.value); if (v) { S.settings.goal[k] = Math.round(Math.min(v, k === 'kcal' ? 10000 : 2000)); saveSettings(); $('#s-mk').textContent = macroKcalLine(); } }
+  else if (p) { S.settings.profile[p] = parseNum(t.value) || null; saveSettings(); $('#s-rec').innerHTML = recHTML(); }
+  else if (t.dataset.ai === 'custom') { const v = t.value.trim().toLowerCase(); S.ai.custom = MODEL_RE.test(v) ? v : ''; S.skip.clear(); saveAI(); }
+  else if (t.id === 's-bkp') S.bkPhotos = t.checked;
+}
+async function saveKey(raw, quiet) {
+  const k = cleanKey(raw);
+  S.ai.key = k; S.skip.clear(); S.legacy = false; S.aiTest = null;
+  await saveAI();
+  if (!quiet) { renderSettings(); toast(k ? 'Anahtar kaydedildi' : 'Anahtar silindi'); if (k) testAI(); }
+}
+
+/* ---------------- backup ---------------- */
+function downloadBlob(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name; a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 4000);
+}
+async function buildBackup() {
+  const entries = Array.from(S.entries.values()).map(e => clone(e)).sort((a, b) => a.ts - b.ts);
+  const out = { app: 'lokma', version: 1, exportedAt: new Date().toISOString(), settings: S.settings, entries };
+  if (S.bkPhotos) {
+    const photos = {};
+    for (const e of entries) if (e.hasPhoto) { const p = await getPhoto(e.id); if (p) photos[e.id] = p; }
+    out.photos = photos;
+  }
+  const json = JSON.stringify(out);
+  const name = 'lokma-yedek-' + todayKey() + '.json';
+  return { name, blob: new Blob([json], { type: 'application/json' }), size: json.length };
+}
+async function saveBackupFile(b) {
+  // iOS saves files through the share sheet ("Dosyalara Kaydet"); elsewhere a normal download works.
+  if (isIOS() && navigator.canShare && window.File) {
+    const file = new File([b.blob], b.name, { type: 'application/json' });
+    if (navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file] }); S.bk = { mode: 'done', text: 'Yedek paylaşıldı. “Dosyalara Kaydet” ile sakladıysan hazırsın.' }; refreshBackupPanel(); return; }
+      catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+  }
+  downloadBlob(b.blob, b.name);
+  S.bk = { mode: 'done', text: b.name + ' indirildi.' };
+  refreshBackupPanel();
+}
+async function exportBackup() {
+  if (!S.entries.size) { toast('Yedeklenecek kayıt yok.'); return; }
+  S.bk = { mode: 'busy', text: 'Yedek hazırlanıyor…' };
+  refreshBackupPanel();
+  let b;
+  try { b = await buildBackup(); } catch (e) { S.bk = { mode: 'error', err: 'Yedek hazırlanamadı.' }; refreshBackupPanel(); return; }
+  if (isIOS()) { S.bk = Object.assign({ mode: 'ready' }, b); refreshBackupPanel(); return; }
+  saveBackupFile(b);
+}
+async function onBackupFile(ev) {
+  const f = ev.target.files && ev.target.files[0];
+  ev.target.value = '';
+  if (!f) return;
+  let data;
+  try { data = JSON.parse(await f.text()); }
+  catch (e) { S.bk = { mode: 'error', err: 'Dosya okunamadı. Lokma yedeği olan bir .json dosyası seç.' }; refreshBackupPanel(); return; }
+  const entries = data && Array.isArray(data.entries) ? data.entries.map(cleanEntry).filter(Boolean) : null;
+  if (!entries) { S.bk = { mode: 'error', err: 'Bu dosyada Lokma kaydı bulunamadı.' }; refreshBackupPanel(); return; }
+  const ids = new Set(entries.map(e => e.id));
+  const photos = {};
+  if (data.photos && typeof data.photos === 'object') {
+    for (const id of Object.keys(data.photos)) {
+      const v = data.photos[id];
+      if (ids.has(id) && typeof v === 'string' && v.indexOf('data:image/') === 0 && v.length < 3000000) photos[id] = v;
+    }
+  }
+  S.bk = { mode: 'confirm', data: { entries, settings: data.settings || null, photos }, count: entries.length, photos: Object.keys(photos).length };
+  refreshBackupPanel();
+}
+async function runImport() {
+  const d = S.bk && S.bk.data;
+  if (!d) return;
+  S.bk = { mode: 'busy', text: d.entries.length + ' kayıt yükleniyor…' };
+  refreshBackupPanel();
+  try {
+    if (d.settings) { S.settings = mergeSettings(d.settings); await saveSettings(true); }
+    let photoFail = false;
+    try { await Store.putPhotos(d.photos); } catch (e) { photoFail = true; }
+    for (const e of d.entries) {
+      const had = S.entries.get(e.id);
+      e.hasPhoto = (!photoFail && !!d.photos[e.id]) || !!(had && had.hasPhoto);
+    }
+    await Store.putMeals(d.entries.map(clone));
+    for (const e of d.entries) { S.entries.set(e.id, e); if (!photoFail && d.photos[e.id]) S.photos.set(e.id, d.photos[e.id]); }
+    S.bk = { mode: 'done', text: d.entries.length + ' kayıt yüklendi.' + (photoFail ? ' Fotoğraflar depolama dolu olduğu için eklenemedi.' : '') };
+    askPersist();
+  } catch (e) {
+    S.bk = { mode: 'error', err: dbErrText(fullErr(e)) };
+  }
+  renderSettings();
+  requestRender();
+}
+
+/* ---------------- tabs, toast, actions ---------------- */
+function switchTab(t) {
+  S.tab = t;
+  for (const v of ['today', 'history', 'settings']) $('#v-' + v).hidden = v !== t;
+  for (const b of $$('.tab')) b.setAttribute('aria-current', b.dataset.tab === t ? 'page' : 'false');
+  document.body.classList.toggle('tab-today', t === 'today');
+  $('#dock').hidden = t !== 'today';
+  if (t === 'history') S.histAnim = true;
+  if (t !== 'settings') S.wipe = false;
+  if (t === 'settings') renderSettings(); else renderCurrent();
+  window.scrollTo(0, 0);
+}
+let toastT = 0, toastFn = null;
+function toast(msg, opt) {
+  opt = opt || {};
+  const el = $('#toast');
+  el.innerHTML = '<span>' + esc(msg) + '</span>' + (opt.action ? '<button data-act="toast-act">' + esc(opt.action) + '</button>' : '');
+  toastFn = opt.onAction || null;
+  el.classList.add('show');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => { el.classList.remove('show'); toastFn = null; }, opt.ms || (opt.action ? 5500 : 2800));
+}
+function updateOnline() {
+  const el = $('#offline');
+  el.hidden = navigator.onLine !== false;
+  el.innerHTML = ic('wifiOff') + '<span>Çevrimdışısın. Kayıtların görüntülenebilir, fotoğraf analizi için internet gerekiyor.</span>';
+}
+function goAI() {
+  while (stack.length) closeSheet();
+  switchTab('settings');
+  const sec = $('#s-ai');
+  if (sec) { sec.scrollIntoView({ block: 'start' }); const k = $('#s-key'); if (k && !S.ai.key) setTimeout(() => { try { k.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }, 300); }
+}
+
+const A = {
+  'tab': a => switchTab(a.dataset.tab),
+  'day-prev': () => { S.viewDay = addDays(S.viewDay, -1); S.ringOff = null; renderToday(); },
+  'day-next': () => { if (S.viewDay < todayKey()) { S.viewDay = addDays(S.viewDay, 1); S.ringOff = null; renderToday(); } },
+  'day-today': () => { S.viewDay = todayKey(); S.ringOff = null; renderToday(); },
+  'open-meal': a => openMeal(S.viewDay, a.dataset.type),
+  'manual': () => openManual({ day: S.viewDay }),
+  'close-sheet': a => closeSheet(sheetFor(a)),
+  'go-ai': () => goAI(),
+  'res-retry': a => runAnalysis(sheetFor(a)),
+  'res-manual': a => { const sh = sheetFor(a), r = sh.ctx; closeSheet(sh); openManual({ day: r.day, type: r.type, text: r.source === 'text' ? r.text : '' }); },
+  'res-del': a => { const sh = sheetFor(a); sh.ctx.items.splice(Number(a.dataset.i), 1); paint(sh); },
+  'res-add': a => { const sh = sheetFor(a); openItemForm(it => { sh.ctx.items.push(it); sh.ctx.state = 'ready'; paint(sh); }); },
+  'res-type': a => { const sh = sheetFor(a); sh.ctx.type = a.dataset.v; for (const b of $$('[data-act="res-type"]', sh.el)) b.setAttribute('aria-pressed', String(b.dataset.v === a.dataset.v)); },
+  'res-reanalyze': a => runAnalysis(sheetFor(a)),
+  'res-key': async a => {
+    const sh = sheetFor(a), inp = $('#res-key', sh.el), k = cleanKey(inp && inp.value);
+    if (k.length < 20) { $('#res-key-err', sh.el).textContent = 'Anahtarı eksiksiz yapıştır. Genelde “AIza” ile başlar.'; if (inp) inp.focus(); return; }
+    sh.ctx.keyDraft = '';
+    await saveKey(k, true);
+    toast('Anahtar kaydedildi');
+    runAnalysis(sh);
+  },
+  'res-commit': a => commitResult(sheetFor(a)),
+  'man-ai': a => {
+    const sh = sheetFor(a), ta = $('#man-text', sh.el), text = (ta.value || '').trim();
+    if (text.length < 2) { ta.focus(); toast('Ne yediğini kısaca yaz.'); return; }
+    const c = sh.ctx;
+    closeSheet(sh);
+    runAnalysis(openResult(newSession({ source: 'text', text, day: c.day, type: c.type })));
+  },
+  'man-values': a => {
+    const sh = sheetFor(a), r = readItem(sh.el, 'mi');
+    if (r.err) { $('#mi-err', sh.el).textContent = r.err; return; }
+    const c = sh.ctx;
+    closeSheet(sh);
+    openResult(newSession({ source: 'manual', items: [r.item], day: c.day, type: c.type }));
+  },
+  'item-save': a => {
+    const sh = sheetFor(a), r = readItem(sh.el, 'it');
+    if (r.err) { $('#it-err', sh.el).textContent = r.err; return; }
+    closeSheet(sh);
+    sh.ctx.onSave(r.item);
+  },
+  'm-toggle': a => { const sh = sheetFor(a), key = a.dataset.e + ':' + a.dataset.i; sh.ctx.open = sh.ctx.open === key ? null : key; sh.ctx.confirm = null; paint(sh); },
+  'm-delitem': a => { const sh = sheetFor(a), e = S.entries.get(a.dataset.e); if (!e) return; e.items.splice(Number(a.dataset.i), 1); sh.ctx.open = null; touchEntry(e.id); paint(sh); },
+  'm-type': a => {
+    const sh = sheetFor(a), e = S.entries.get(a.dataset.e), v = a.dataset.v;
+    if (!e || e.type === v) return;
+    e.type = v; touchEntry(e.id); paint(sh); toast(typeOf(v).moved);
+  },
+  'm-del': a => {
+    const sh = sheetFor(a), id = a.dataset.e;
+    if (sh.ctx.confirm !== id) {
+      sh.ctx.confirm = id; paint(sh);
+      setTimeout(() => { if (sh.ctx.confirm === id && stack.includes(sh)) { sh.ctx.confirm = null; paint(sh); } }, 4000);
+      return;
+    }
+    sh.ctx.confirm = null;
+    removeEntry(id);
+  },
+  'm-additem': a => { const sh = sheetFor(a), id = a.dataset.e; openItemForm(it => { const e = S.entries.get(id); if (!e) return; e.items.push(it); touchEntry(id); paint(sh); }); },
+  'hist-range': a => { S.histRange = a.dataset.v; S.histSel = null; S.histAnim = true; renderHistory(); },
+  'hist-sel': a => { S.histSel = Number(a.dataset.i); renderHistory(); },
+  'hist-day': a => { S.viewDay = a.dataset.k; S.ringOff = null; switchTab('today'); },
+  'prof': a => {
+    const k = a.dataset.k, v = a.dataset.v;
+    S.settings.profile[k] = v; saveSettings();
+    for (const b of $$('[data-act="prof"][data-k="' + k + '"]')) b.setAttribute('aria-pressed', String(b.dataset.v === v));
+    if (k === 'activity') $('#s-act-d').textContent = ACT[v].d;
+    $('#s-rec').innerHTML = recHTML();
+  },
+  'rec-apply': () => {
+    const r = recommend(S.settings.profile);
+    if (!r) return;
+    Object.assign(S.settings.goal, { kcal: r.kcal, protein: r.protein, carbs: r.carbs, fat: r.fat, fiber: r.fiber, sugar: r.sugar });
+    saveSettings(true); renderSettings(); toast('Günlük hedefler güncellendi');
+  },
+  'key-eye': a => {
+    const inp = $('#' + a.dataset.for);
+    if (!inp) return;
+    const show = inp.type === 'password';
+    inp.type = show ? 'text' : 'password';
+    a.setAttribute('aria-label', show ? 'Anahtarı gizle' : 'Anahtarı göster');
+  },
+  'key-save': () => {
+    const k = cleanKey(($('#s-key') || {}).value);
+    if (k && k.length < 20) { toast('Anahtar eksik görünüyor. Tamamını yapıştır.'); return; }
+    saveKey(k);
+  },
+  'key-del': () => saveKey(''),
+  'ai-test': () => testAI(),
+  'ai-model': a => { S.ai.model = a.dataset.v; S.skip.clear(); S.aiTest = null; saveAI(); renderSettings(); },
+  'install': async () => {
+    const ev = S.installEvt;
+    if (!ev) return;
+    S.installEvt = null;
+    try { ev.prompt(); await ev.userChoice; } catch (e) { /* ignore */ }
+    if (S.tab === 'settings') renderSettings();
+  },
+  'wipe': async () => {
+    if (!S.wipe) {
+      S.wipe = true; renderSettings();
+      setTimeout(() => { if (S.wipe) { S.wipe = false; if (S.tab === 'settings') renderSettings(); } }, 6000);
+      return;
+    }
+    S.wipe = false;
+    for (const t of S.dirty.values()) clearTimeout(t);
+    S.dirty.clear();
+    try { await Store.clearMeals(); S.entries.clear(); S.photos.clear(); toast('Tüm kayıtlar silindi'); }
+    catch (e) { toast(dbErrText(fullErr(e))); }
+    renderSettings();
+  },
+  'bk-down': () => exportBackup(),
+  'bk-save': () => { if (S.bk && S.bk.mode === 'ready') saveBackupFile(S.bk); },
+  'bk-up': () => $('#in-backup').click(),
+  'bk-cancel': () => { S.bk = null; refreshBackupPanel(); },
+  'bk-import': () => runImport(),
+  'toast-act': () => { const fn = toastFn; toastFn = null; $('#toast').classList.remove('show'); if (fn) fn(); }
+};
+
+/* ---------------- init ---------------- */
+$('#bottom').innerHTML =
+  '<div class="dock" id="dock">' +
+  '<label for="in-cam" class="cam" tabindex="0" ' + presetAttrs() + '>' + ic('camera') + '<span>Fotoğraf Çek</span></label>' +
+  '<label for="in-gal" class="gal" tabindex="0" ' + presetAttrs() + ' aria-label="Galeriden seç">' + ic('image') + '<span>Galeri</span></label></div>' +
+  '<nav class="tabs" aria-label="Bölümler">' +
+  '<button class="tab" data-act="tab" data-tab="today" aria-current="page">' + ic('plate') + '<span>Bugün</span></button>' +
+  '<button class="tab" data-act="tab" data-tab="history" aria-current="false">' + ic('bars') + '<span>Geçmiş</span></button>' +
+  '<button class="tab" data-act="tab" data-tab="settings" aria-current="false">' + ic('sliders') + '<span>Ayarlar</span></button></nav>';
+
+document.addEventListener('click', e => {
+  const p = e.target.closest('[data-preset]');
+  if (p) S.pending = { type: p.dataset.ptype || undefined, day: p.dataset.pday || undefined };
+  const a = e.target.closest('[data-act]');
+  if (!a || a.disabled) return;
+  const fn = A[a.dataset.act];
+  if (fn) fn(a, e);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && stack.length) { closeSheet(); return; }
+  const l = e.target.closest && e.target.closest('label[for][tabindex]');
+  if (l && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); l.click(); }
+});
+$('#in-cam').addEventListener('change', onPhoto);
+$('#in-gal').addEventListener('change', onPhoto);
+$('#in-backup').addEventListener('change', onBackupFile);
+$('#v-settings').addEventListener('input', onSettingsInput);
+$('#v-settings').addEventListener('change', onSettingsInput);
+window.addEventListener('online', updateOnline);
+window.addEventListener('offline', updateOnline);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) requestRender(); });
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); S.installEvt = e; if (S.tab === 'settings') { const el = $('#s-inst'); if (el) el.innerHTML = installHTML(); } });
+window.addEventListener('appinstalled', () => { S.installEvt = null; toast('Lokma yüklendi'); });
+document.body.classList.add('tab-today');
+updateOnline();
+boot();
+
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+}
+})();
+</script>
+</body>
+</html>
